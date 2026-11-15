@@ -260,3 +260,4 @@ model OrderStatusHistory {
 
   @@index([orderId])
 }
+

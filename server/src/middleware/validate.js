@@ -11,3 +11,4 @@ export const validateRequest = (schema) => (req, res, next) => {
     return ApiResponse.error(res, 'Validation failed for request parameters', 400, errorDetails);
   }
 };
+

@@ -1,5 +1,16 @@
 import { prisma, getDatabaseStatus } from '../config/db.js';
 import { logger } from '../utils/logger.js';
+import { env } from '../config/env.js';
+
+// Custom error for production database outage
+class DatabaseUnavailableError extends Error {
+  constructor(message = 'Database service is currently unavailable') {
+    super(message);
+    this.name = 'DatabaseUnavailableError';
+    this.statusCode = 503;
+    this.isOperational = true;
+  }
+}
 
 // Curated master catalogue baseline synchronized with frontend src/data/products.js
 export const FALLBACK_CATEGORIES = [
@@ -255,11 +266,19 @@ export async function getAllProducts({ category, search, minPrice, maxPrice, sor
       const dbProducts = await prisma.product.findMany({ where, orderBy });
       if (dbProducts.length > 0) return dbProducts;
     } catch (err) {
-      logger.warn('Failed querying PostgreSQL for products, serving fallback baseline:', err.message);
+      if (env.NODE_ENV === 'production') {
+        throw new DatabaseUnavailableError('PostgreSQL query failed in production environment');
+      }
+      logger.warn('Failed querying PostgreSQL for products, serving development baseline:', err.message);
     }
   }
 
-  // Fallback in-memory querying
+  // In production, do not silently fallback if DB is offline
+  if (env.NODE_ENV === 'production' && !getDatabaseStatus()) {
+    throw new DatabaseUnavailableError('PostgreSQL is offline in production environment');
+  }
+
+  // Fallback in-memory querying (development only)
   let list = [...FALLBACK_PRODUCTS];
 
   if (category && category !== 'All') {
@@ -296,8 +315,15 @@ export async function getProductById(id) {
       const found = await prisma.product.findUnique({ where: { id } });
       if (found) return found;
     } catch (err) {
+      if (env.NODE_ENV === 'production') {
+        throw new DatabaseUnavailableError(`PostgreSQL query for product ${id} failed in production`);
+      }
       logger.warn(`Failed querying DB for product ${id}:`, err.message);
     }
+  }
+
+  if (env.NODE_ENV === 'production' && !getDatabaseStatus()) {
+    throw new DatabaseUnavailableError('PostgreSQL is offline in production environment');
   }
 
   return FALLBACK_PRODUCTS.find((p) => p.id === id) || null;
@@ -314,9 +340,17 @@ export async function getAllCategories() {
         return ['All', ...distinct.map((d) => d.category)];
       }
     } catch (err) {
+      if (env.NODE_ENV === 'production') {
+        throw new DatabaseUnavailableError('PostgreSQL category lookup failed in production');
+      }
       logger.warn('Failed querying DB for distinct categories:', err.message);
     }
   }
 
+  if (env.NODE_ENV === 'production' && !getDatabaseStatus()) {
+    throw new DatabaseUnavailableError('PostgreSQL is offline in production environment');
+  }
+
   return FALLBACK_CATEGORIES;
 }
+

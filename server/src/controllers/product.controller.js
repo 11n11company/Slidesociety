@@ -35,3 +35,4 @@ export async function getCategories(req, res, next) {
     next(error);
   }
 }
+

@@ -8,3 +8,4 @@ router.get('/', getProducts);
 router.get('/:id', getProduct);
 
 export default router;
+

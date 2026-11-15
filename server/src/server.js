@@ -47,3 +47,4 @@ startServer().catch((error) => {
   logger.error('Critical failure during server startup:', error);
   process.exit(1);
 });
+

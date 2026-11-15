@@ -17,3 +17,4 @@ export function getHealth(req, res) {
     environment: process.env.NODE_ENV || 'development'
   }, 'Slidescoiety Backend Service is healthy and operational');
 }
+

@@ -15,3 +15,4 @@ export const env = {
   DATABASE_URL: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/slidescoiety_db?schema=public',
   LOG_FORMAT: process.env.LOG_FORMAT || 'dev'
 };
+

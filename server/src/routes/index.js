@@ -15,3 +15,4 @@ router.get('/v1/categories', getCategories);
 router.use('/v1/products', productRoutes);
 
 export default router;
+
