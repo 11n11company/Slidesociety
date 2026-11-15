@@ -1,0 +1,262 @@
+// Slidescoiety Sim Racing Store Database Schema
+// PostgreSQL with Prisma ORM
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+  SUPPORT
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  CONFIRMED
+  FABRICATING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  INITIATED
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  REFUNDED
+}
+
+model User {
+  id                  String               @id @default(uuid())
+  email               String               @unique
+  passwordHash        String
+  fullName            String
+  phone               String?
+  role                UserRole             @default(CUSTOMER)
+  isVerified          Boolean              @default(false)
+  verificationToken   String?
+  resetPasswordToken  String?
+  resetPasswordExpires DateTime?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  addresses           Address[]
+  orders              Order[]
+  carts               Cart[]
+  notifications       Notification[]
+  statusChanges       OrderStatusHistory[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model Address {
+  id            String   @id @default(uuid())
+  userId        String
+  addressType   String   @default("SHIPPING") // SHIPPING, BILLING
+  recipientName String
+  phone         String
+  streetLine1   String
+  streetLine2   String?
+  city          String
+  state         String
+  postalCode    String
+  country       String   @default("India")
+  isDefault     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders        Order[]
+
+  @@index([userId])
+}
+
+model Product {
+  id                 String           @id // Matches slug ID, e.g. "frame-x", "wheel", "pedals-pro"
+  name               String
+  category           String
+  priceInr           Decimal          @db.Decimal(12, 2)
+  priceEurDisplay    String?
+  specDescription    String           @db.Text
+  compatibilityNotes String?          @db.Text
+  rating             Float            @default(5.0)
+  isAvailable        Boolean          @default(true)
+  stockQuantity      Int              @default(50)
+  imageUrl           String           @db.Text
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  variants           ProductVariant[]
+  cartItems          CartItem[]
+  orderItems         OrderItem[]
+
+  @@index([category])
+  @@index([isAvailable])
+}
+
+model ProductVariant {
+  id            String   @id @default(uuid())
+  productId     String
+  variantName   String
+  priceModifier Decimal  @default(0.00) @db.Decimal(10, 2)
+  sku           String?  @unique
+  stockQuantity Int      @default(20)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+}
+
+model Cart {
+  id        String     @id @default(uuid())
+  userId    String?
+  sessionId String?    @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+
+  @@index([userId])
+  @@index([sessionId])
+}
+
+model CartItem {
+  id            String   @id @default(uuid())
+  cartId        String
+  productId     String
+  quantity      Int      @default(1)
+  customRigName String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  cart          Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, productId, customRigName])
+  @@index([cartId])
+  @@index([productId])
+}
+
+model Order {
+  id                 String               @id @default(uuid())
+  orderNumber        String               @unique // e.g. "SLIDE-2026-1001"
+  userId             String
+  shippingAddressId  String?
+  subtotal           Decimal              @db.Decimal(12, 2)
+  taxAmount          Decimal              @default(0.00) @db.Decimal(12, 2)
+  shippingAmount     Decimal              @default(0.00) @db.Decimal(12, 2)
+  totalAmount        Decimal              @db.Decimal(12, 2)
+  status             OrderStatus          @default(PENDING_PAYMENT)
+  notes              String?              @db.Text
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  user               User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
+  shippingAddress    Address?             @relation(fields: [shippingAddressId], references: [id], onDelete: SetNull)
+  items              OrderItem[]
+  payments           Payment[]
+  invoice            Invoice?
+  statusHistory      OrderStatusHistory[]
+
+  @@index([userId])
+  @@index([orderNumber])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id            String   @id @default(uuid())
+  orderId       String
+  productId     String
+  productName   String
+  unitPrice     Decimal  @db.Decimal(12, 2)
+  quantity      Int
+  lineTotal     Decimal  @db.Decimal(12, 2)
+  customRigName String?
+  createdAt     DateTime @default(now())
+
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model Payment {
+  id               String        @id @default(uuid())
+  orderId          String
+  paymentGateway   String        @default("RAZORPAY")
+  gatewayOrderId   String
+  gatewayPaymentId String?       @unique
+  gatewaySignature String?
+  amount           Decimal       @db.Decimal(12, 2)
+  currency         String        @default("INR")
+  status           PaymentStatus @default(INITIATED)
+  method           String?       // "upi", "card", "netbanking"
+  rawResponse      String?       @db.Text
+  paidAt           DateTime?
+  createdAt        DateTime      @default(now())
+
+  order            Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([gatewayOrderId])
+  @@index([gatewayPaymentId])
+  @@index([status])
+}
+
+model Invoice {
+  id            String   @id @default(uuid())
+  orderId       String   @unique
+  invoiceNumber String   @unique // e.g. "INV-2026-0001"
+  pdfUrl        String?
+  totalAmount   Decimal  @db.Decimal(12, 2)
+  taxBreakdown  String?  @db.Text
+  issuedAt      DateTime @default(now())
+
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceNumber])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String?
+  type      String   // "ORDER_UPDATE", "PAYMENT_SUCCESS", "SYSTEM_ALERT"
+  title     String
+  message   String   @db.Text
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+}
+
+model OrderStatusHistory {
+  id             String       @id @default(uuid())
+  orderId        String
+  previousStatus OrderStatus?
+  newStatus      OrderStatus
+  changedByUserId String?
+  notes          String?      @db.Text
+  createdAt      DateTime     @default(now())
+
+  order          Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  changedByUser  User?        @relation(fields: [changedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+}
