@@ -21,11 +21,14 @@ import {
   Calendar,
   FileText,
   CreditCard,
-  RotateCcw
+  RotateCcw,
+  Download,
+  Send
 } from 'lucide-react';
 import { authApi } from '../services/authApi';
 import { orderApi } from '../services/orderApi';
 import { paymentApi } from '../services/paymentApi';
+import { invoiceApi } from '../services/invoiceApi';
 import { fmt } from '../data/products';
 
 export default function AccountModal({
@@ -56,6 +59,9 @@ export default function AccountModal({
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [payingOrder, setPayingOrder] = useState(false);
+  const [downloadingInvoice, setDownloadingInvoice] = useState(false);
+  const [resendingInvoice, setResendingInvoice] = useState(false);
+  const [invoiceMessage, setInvoiceMessage] = useState('');
 
   // Status Badge Mapper
   const getStatusBadge = (status) => {
@@ -215,6 +221,47 @@ export default function AccountModal({
     } catch (err) {
       setError(err.message || 'Failed to initiate payment.');
       setPayingOrder(false);
+    }
+  };
+
+  // Download Invoice PDF
+  const handleDownloadInvoice = async (order = selectedOrder) => {
+    if (!order) return;
+    const inv = order.invoice;
+    const invId = inv?.id || inv?.invoiceNumber || order.id;
+    const filename = `${inv?.invoiceNumber || order.orderNumber}_invoice.pdf`;
+    setDownloadingInvoice(true);
+    setInvoiceMessage('');
+    setError('');
+
+    try {
+      await invoiceApi.downloadInvoice(invId, filename);
+      onShowToast?.(`Invoice ${inv?.invoiceNumber || ''} downloaded successfully.`);
+    } catch (err) {
+      setError(err.message || 'Failed to download invoice PDF.');
+    } finally {
+      setDownloadingInvoice(false);
+    }
+  };
+
+  // Resend Invoice to Customer Email
+  const handleResendInvoice = async (order = selectedOrder) => {
+    if (!order) return;
+    const inv = order.invoice;
+    const invId = inv?.id || inv?.invoiceNumber;
+    if (!invId) return;
+    setResendingInvoice(true);
+    setInvoiceMessage('');
+    setError('');
+
+    try {
+      const res = await invoiceApi.resendInvoice(invId);
+      setInvoiceMessage(res.message || 'Invoice sent to your registered email.');
+      onShowToast?.('Invoice email request sent.');
+    } catch (err) {
+      setError(err.message || 'Failed to resend invoice email.');
+    } finally {
+      setResendingInvoice(false);
     }
   };
 
@@ -640,6 +687,67 @@ export default function AccountModal({
                     </div>
                   )}
 
+                  {/* Official Order Invoice Card for Paid Orders */}
+                  {selectedOrder.status !== 'PENDING' && selectedOrder.status !== 'CANCELLED' && (
+                    <div className="p-4 rounded-2xl bg-black/60 border border-white/10 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-[#e50914]/20 border border-[#e50914]/30 flex items-center justify-center text-[#e50914]">
+                            <FileText className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <div className="text-[10px] font-mono uppercase tracking-wider text-neutral-400">
+                              Official Order Invoice
+                            </div>
+                            <div className="text-xs font-mono font-bold text-white">
+                              {selectedOrder.invoice?.invoiceNumber || 'Invoice Ready'}
+                            </div>
+                          </div>
+                        </div>
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                          {selectedOrder.invoice?.status || 'Available'}
+                        </span>
+                      </div>
+
+                      {invoiceMessage && (
+                        <div className="text-xs text-emerald-400 bg-emerald-500/10 p-2.5 rounded-xl border border-emerald-500/20 flex items-center gap-2">
+                          <CheckCircle className="w-3.5 h-3.5 shrink-0" />
+                          <span>{invoiceMessage}</span>
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadInvoice(selectedOrder)}
+                          disabled={downloadingInvoice}
+                          className="flex-1 py-2 px-3 rounded-xl bg-[#e50914] hover:bg-[#ff1f2d] text-white text-xs font-bold transition-all shadow-md shadow-[#e50914]/30 flex items-center justify-center gap-1.5 disabled:opacity-50"
+                        >
+                          {downloadingInvoice ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Download className="w-3.5 h-3.5" />
+                          )}
+                          <span>Download PDF</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleResendInvoice(selectedOrder)}
+                          disabled={resendingInvoice || !selectedOrder.invoice}
+                          className="py-2 px-3.5 rounded-xl bg-white/10 hover:bg-white/15 text-neutral-200 text-xs font-bold transition-all border border-white/10 flex items-center justify-center gap-1.5 disabled:opacity-50"
+                        >
+                          {resendingInvoice ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Send className="w-3.5 h-3.5" />
+                          )}
+                          <span>Email Invoice</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Cancel Confirmation Prompt */}
                   {showCancelModal && (
                     <div className="p-4 rounded-2xl bg-black/80 border border-rose-500/50 space-y-3">
@@ -831,6 +939,12 @@ export default function AccountModal({
                               <div className="flex items-center gap-1.5 font-mono text-[11px]">
                                 <Calendar className="w-3.5 h-3.5 text-neutral-500" />
                                 <span>{new Date(ord.createdAt).toLocaleDateString()}</span>
+                                {ord.invoice && (
+                                  <span className="ml-1.5 px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-[#e50914]/15 text-[#e50914] border border-[#e50914]/30 inline-flex items-center gap-0.5">
+                                    <FileText className="w-2.5 h-2.5" />
+                                    <span>INV</span>
+                                  </span>
+                                )}
                               </div>
                               <div className="flex items-center gap-3">
                                 <span>{ord.items?.length || 0} items</span>

@@ -142,3 +142,199 @@ export async function sendPasswordResetEmail({ to, fullName, resetToken }) {
   };
 }
 
+/**
+ * Send Customer Order Invoice with PDF Attachment
+ */
+export async function sendInvoiceEmail({ to, customerName, orderNumber, invoiceNumber, totalAmount, pdfBuffer }) {
+  const subject = 'Your Slidescoiety Order Invoice';
+  const formattedAmount = new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 2
+  }).format(Number(totalAmount));
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; background-color: #080002; color: #f5f6f2; padding: 40px; border-radius: 12px; max-width: 600px; margin: auto;">
+      <h1 style="color: #e50914; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;">SLIDESCOIETY</h1>
+      <p style="font-size: 14px; color: #a3a3a3; margin-top: 0; text-transform: uppercase;">Sim Racing Store</p>
+      <hr style="border: none; border-top: 1px solid #262626; margin: 24px 0;" />
+      
+      <h2 style="color: #ffffff; margin-bottom: 12px;">Payment Confirmed!</h2>
+      <p style="color: #d4d4d4; font-size: 14px; line-height: 1.6;">
+        Dear <strong>${customerName || 'Driver'}</strong>,
+      </p>
+      <p style="color: #d4d4d4; font-size: 14px; line-height: 1.6;">
+        Thank you for your order with Slidescoiety. Your payment has been successfully captured and verified.
+        Your official order invoice <strong>${invoiceNumber}</strong> is attached to this email as a PDF.
+      </p>
+
+      <div style="background-color: #121212; border: 1px solid #262626; border-radius: 8px; padding: 20px; margin: 24px 0;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px; color: #d4d4d4;">
+          <tr>
+            <td style="padding: 6px 0; color: #a3a3a3;">Order Number:</td>
+            <td style="padding: 6px 0; font-weight: bold; color: #ffffff; text-align: right;">${orderNumber}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #a3a3a3;">Invoice Number:</td>
+            <td style="padding: 6px 0; font-weight: bold; color: #e50914; text-align: right;">${invoiceNumber}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #a3a3a3;">Total Amount Paid:</td>
+            <td style="padding: 6px 0; font-weight: bold; color: #ffffff; text-align: right;">${formattedAmount}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #a3a3a3;">Payment Status:</td>
+            <td style="padding: 6px 0; font-weight: bold; color: #10b981; text-align: right;">CAPTURED (Verified)</td>
+          </tr>
+        </table>
+      </div>
+
+      <p style="color: #a3a3a3; font-size: 13px; line-height: 1.6;">
+        Your sim racing cockpit hardware has entered our queue for preparation and dispatch. You can track live telemetry and status history directly inside your Driver Account portal.
+      </p>
+
+      <hr style="border: none; border-top: 1px solid #262626; margin: 24px 0;" />
+      
+      <p style="color: #737373; font-size: 12px; margin: 0;">
+        Questions or custom setup adjustments? Contact our pit crew at
+        <a href="mailto:${env.SELLER_EMAIL}" style="color: #e50914; text-decoration: none;">${env.SELLER_EMAIL}</a>.
+      </p>
+      <p style="color: #525252; font-size: 11px; margin-top: 12px;">
+        Slidescoiety Sim Racing Store &bull; Professional Cockpits &bull; Build / Race / Upgrade
+      </p>
+    </div>
+  `;
+
+  const attachments = pdfBuffer ? [{
+    filename: `${invoiceNumber}.pdf`,
+    content: pdfBuffer,
+    contentType: 'application/pdf'
+  }] : [];
+
+  if (transporter) {
+    try {
+      await transporter.sendMail({
+        from: env.EMAIL_FROM,
+        to,
+        subject,
+        html,
+        attachments
+      });
+      logger.info(`Invoice email with PDF sent to customer [${to}] for Order [${orderNumber}]`);
+      return { sent: true, provider: 'smtp' };
+    } catch (err) {
+      logger.error(`SMTP delivery of invoice to [${to}] failed: ${err.message}`);
+      return { sent: false, error: err.message };
+    }
+  }
+
+  // Development simulation: log clear warning without pretending SMTP succeeded
+  logger.warn(`[DEV-EMAIL] SMTP not configured. Simulated customer invoice email for [${to}], Order [${orderNumber}], Invoice [${invoiceNumber}]`);
+  return {
+    sent: false,
+    simulated: true,
+    message: 'SMTP not configured in development environment. Invoice email simulated.'
+  };
+}
+
+/**
+ * Send Admin Notification for New Paid Order
+ */
+export async function sendAdminOrderNotification({ order, payment, invoice }) {
+  const adminRecipient = env.ADMIN_NOTIFICATION_EMAIL || 'orders@slidescoiety.com';
+  const subject = 'New Paid Order — Slidescoiety';
+
+  const formattedAmount = new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 2
+  }).format(Number(order.totalAmount));
+
+  const itemsHtml = (order.items || []).map(it => `
+    <tr>
+      <td style="padding: 8px; border-bottom: 1px solid #262626; color: #ffffff;">${it.productName}</td>
+      <td style="padding: 8px; border-bottom: 1px solid #262626; text-align: center; color: #a3a3a3;">${it.quantity}</td>
+      <td style="padding: 8px; border-bottom: 1px solid #262626; text-align: right; color: #ffffff;">₹${Number(it.lineTotal).toLocaleString('en-IN')}</td>
+    </tr>
+  `).join('');
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; background-color: #0d0d0d; color: #f5f6f2; padding: 30px; border-radius: 8px; max-width: 650px; margin: auto;">
+      <h2 style="color: #e50914; margin-top: 0; text-transform: uppercase;">New Paid Order Received</h2>
+      <p style="color: #a3a3a3; font-size: 13px;">A customer has completed payment and an order is ready for fulfillment.</p>
+      
+      <div style="background-color: #171717; border: 1px solid #333333; border-radius: 6px; padding: 16px; margin: 20px 0; font-size: 13px;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 4px 0; color: #888888; width: 140px;">Order Number:</td>
+            <td style="padding: 4px 0; font-weight: bold; color: #ffffff;">${order.orderNumber}</td>
+          </tr>
+          <tr>
+            <td style="padding: 4px 0; color: #888888;">Invoice Number:</td>
+            <td style="padding: 4px 0; font-weight: bold; color: #e50914;">${invoice?.invoiceNumber || 'PENDING'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 4px 0; color: #888888;">Customer:</td>
+            <td style="padding: 4px 0; color: #ffffff;">${order.user?.fullName || 'Customer'} (${order.user?.email || 'N/A'})</td>
+          </tr>
+          <tr>
+            <td style="padding: 4px 0; color: #888888;">Amount Received:</td>
+            <td style="padding: 4px 0; font-weight: bold; color: #10b981;">${formattedAmount}</td>
+          </tr>
+          <tr>
+            <td style="padding: 4px 0; color: #888888;">Payment Reference:</td>
+            <td style="padding: 4px 0; font-family: monospace; color: #ffffff;">${payment?.providerPaymentId || 'N/A'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 4px 0; color: #888888;">Order Date:</td>
+            <td style="padding: 4px 0; color: #ffffff;">${new Date(order.createdAt).toLocaleString()}</td>
+          </tr>
+        </table>
+      </div>
+
+      <h4 style="color: #ffffff; margin-bottom: 8px;">Ordered Components</h4>
+      <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 24px;">
+        <thead>
+          <tr style="background-color: #222222;">
+            <th style="padding: 8px; text-align: left; color: #888888;">Product</th>
+            <th style="padding: 8px; text-align: center; color: #888888;">Qty</th>
+            <th style="padding: 8px; text-align: right; color: #888888;">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itemsHtml}
+        </tbody>
+      </table>
+
+      <p style="color: #666666; font-size: 11px; margin: 0;">
+        Slidescoiety Internal Admin Dispatch Notification &bull; Sensitive customer data protected
+      </p>
+    </div>
+  `;
+
+  if (transporter) {
+    try {
+      await transporter.sendMail({
+        from: env.EMAIL_FROM,
+        to: adminRecipient,
+        subject,
+        html
+      });
+      logger.info(`Admin notification email sent to [${adminRecipient}] for Order [${order.orderNumber}]`);
+      return { sent: true, provider: 'smtp' };
+    } catch (err) {
+      logger.error(`SMTP delivery of admin notification to [${adminRecipient}] failed: ${err.message}`);
+      return { sent: false, error: err.message };
+    }
+  }
+
+  // Development simulation: log notification clearly
+  logger.warn(`[DEV-EMAIL] SMTP not configured. Simulated admin notification for Order [${order.orderNumber}], Total: ${formattedAmount}`);
+  return {
+    sent: false,
+    simulated: true,
+    message: 'SMTP not configured in development environment. Admin notification simulated.'
+  };
+}
+
+

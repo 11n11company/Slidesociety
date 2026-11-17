@@ -319,7 +319,17 @@ export async function getCustomerOrders(userId, { page = 1, limit = 10, status =
           orderBy: { createdAt: 'desc' },
           take: 5
         },
-        shippingAddress: true
+        shippingAddress: true,
+        invoice: true,
+        payments: {
+          select: {
+            id: true,
+            status: true,
+            amount: true,
+            providerPaymentId: true,
+            verifiedAt: true
+          }
+        }
       }
     }),
     prisma.order.count({ where })
@@ -353,7 +363,19 @@ export async function getCustomerOrderById(userId, orderId) {
       statusHistory: {
         orderBy: { createdAt: 'asc' }
       },
-      shippingAddress: true
+      shippingAddress: true,
+      invoice: true,
+      payments: {
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          status: true,
+          amount: true,
+          providerPaymentId: true,
+          method: true,
+          verifiedAt: true
+        }
+      }
     }
   });
 
@@ -511,7 +533,8 @@ export async function getAdminOrderById(orderId) {
           }
         }
       },
-      payments: true
+      payments: true,
+      invoice: true
     }
   });
 

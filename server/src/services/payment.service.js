@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { prisma } from '../config/db.js';
 import { env } from '../config/env.js';
 import { logger } from '../utils/logger.js';
+import { createInvoiceForOrder } from './invoice.service.js';
 
 // Initialize Razorpay SDK Instance
 const razorpayClient = new Razorpay({
@@ -294,6 +295,7 @@ export async function verifyPaymentSignature({
   // 3. Idempotent Success Replay Check
   if (payment.status === 'CAPTURED') {
     logger.info(`Payment [${payment.id}] already captured. Returning verified order status.`);
+    const existingInvoice = await prisma.invoice.findUnique({ where: { orderId: order.id } });
     return {
       success: true,
       isIdempotentReplay: true,
@@ -302,7 +304,8 @@ export async function verifyPaymentSignature({
       orderStatus: order.status,
       message: 'Payment already verified and confirmed',
       order,
-      payment
+      payment,
+      invoice: existingInvoice
     };
   }
 
@@ -485,6 +488,22 @@ export async function verifyPaymentSignature({
 
   logger.info(`Payment verified and captured for Order [${order.orderNumber}]. Payment ID: [${razorpayPaymentId}]`);
 
+  // 7. Automatic Invoice Generation for Captured Payment
+  let invoice = null;
+  if (transactionResult.payment.status === 'CAPTURED' && transactionResult.order.status !== 'CANCELLED') {
+    try {
+      const invResult = await createInvoiceForOrder({
+        orderId: order.id,
+        triggerSource: 'checkout_verify'
+      });
+      if (invResult?.invoice) {
+        invoice = invResult.invoice;
+      }
+    } catch (invErr) {
+      logger.warn(`Invoice generation note on verify for Order [${order.orderNumber}]: ${invErr.message}`);
+    }
+  }
+
   return {
     success: true,
     isCaptured: true,
@@ -493,7 +512,8 @@ export async function verifyPaymentSignature({
     orderStatus: transactionResult.order.status,
     message: 'Payment verified and captured successfully! Order confirmed.',
     order: transactionResult.order,
-    payment: transactionResult.payment
+    payment: transactionResult.payment,
+    invoice
   };
 }
 
@@ -663,6 +683,28 @@ export async function processWebhook({ rawBody, signature, eventIdHeader, event 
       }
     });
   });
+
+  // Trigger invoice generation for captured payment (non-blocking)
+  if (eventType === 'payment.captured' || eventType === 'order.paid') {
+    try {
+      const p = await prisma.payment.findFirst({
+        where: {
+          OR: [
+            ...(razorpayOrderId ? [{ providerOrderId: razorpayOrderId }] : []),
+            ...(razorpayPaymentId ? [{ providerPaymentId: razorpayPaymentId }] : [])
+          ]
+        }
+      });
+      if (p?.orderId) {
+        await createInvoiceForOrder({
+          orderId: p.orderId,
+          triggerSource: `webhook_${eventType}`
+        });
+      }
+    } catch (invErr) {
+      logger.warn(`Invoice generation on webhook [${eventId}] note: ${invErr.message}`);
+    }
+  }
 
   return {
     status: 'PROCESSED',

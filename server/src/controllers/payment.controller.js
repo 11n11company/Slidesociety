@@ -60,6 +60,7 @@ export async function verifyPayment(req, res, next) {
       data: {
         order: result.order,
         payment: result.payment,
+        invoice: result.invoice || null,
         isIdempotentReplay: result.isIdempotentReplay || false,
         isCaptured: result.isCaptured,
         paymentStatus: result.paymentStatus

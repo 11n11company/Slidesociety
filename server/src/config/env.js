@@ -26,8 +26,20 @@ export const env = {
   EMAIL_PORT: parseInt(process.env.EMAIL_PORT, 10) || 587,
   EMAIL_SECURE: process.env.EMAIL_SECURE === 'true',
   EMAIL_USER: process.env.EMAIL_USER || null,
-  EMAIL_PASS: process.env.EMAIL_PASS || null,
+  EMAIL_PASS: process.env.EMAIL_PASSWORD || process.env.EMAIL_PASS || null,
   EMAIL_FROM: process.env.EMAIL_FROM || 'Slidescoiety Sim Racing Store <support@slidescoiety.com>',
+  ADMIN_NOTIFICATION_EMAIL: process.env.ADMIN_NOTIFICATION_EMAIL || 'orders@slidescoiety.com',
+
+  // Seller & Business Information (Controlled Settings)
+  SELLER_NAME: process.env.SELLER_NAME || 'Slidescoiety Sim Racing Store',
+  SELLER_TAGLINE: 'Professional Sim Racing Cockpits & Hardware',
+  SELLER_EMAIL: process.env.SELLER_EMAIL || 'support@slidescoiety.com',
+  SELLER_PHONE: process.env.SELLER_PHONE || '+91 98765 43210',
+  SELLER_ADDRESS: process.env.SELLER_ADDRESS || null,
+  SELLER_GSTIN: process.env.SELLER_GSTIN || null,
+
+  // Private Invoice Storage Configuration
+  INVOICE_STORAGE_DIR: process.env.INVOICE_STORAGE_DIR || path.resolve(__dirname, '../../storage/invoices'),
 
   // Razorpay Payment Gateway Configuration
   RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID || 'rzp_test_placeholder_key',
