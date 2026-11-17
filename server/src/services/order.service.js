@@ -441,16 +441,59 @@ export async function cancelCustomerOrder(userId, orderId, reason) {
 }
 
 /**
- * Admin: List all orders across all customers with search and filters
+ * Admin: List all orders across all customers with search, filters and sorting
  */
-export async function getAdminOrders({ page = 1, limit = 15, status = null, search = null } = {}) {
+export async function getAdminOrders({
+  page = 1,
+  limit = 15,
+  status = null,
+  paymentStatus = null,
+  search = null,
+  startDate = null,
+  endDate = null,
+  sort = 'desc'
+} = {}) {
   const p = Math.max(1, parseInt(page, 10) || 1);
   const l = Math.min(100, Math.max(1, parseInt(limit, 10) || 15));
   const skip = (p - 1) * l;
 
   const where = {};
+  const validOrderStatuses = ['PENDING', 'CONFIRMED', 'PROCESSING', 'FABRICATING', 'READY_TO_SHIP', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
   if (status && status !== 'ALL') {
-    where.status = status;
+    if (!validOrderStatuses.includes(status.toUpperCase())) {
+      const error = new Error(`Invalid order status filter '${status}'. Valid statuses: ${validOrderStatuses.join(', ')}`);
+      error.statusCode = 400;
+      error.code = 'INVALID_FILTER';
+      throw error;
+    }
+    where.status = status.toUpperCase();
+  }
+
+  const validPaymentStatuses = ['PENDING', 'AUTHORIZED', 'CAPTURED', 'FAILED', 'REFUNDED'];
+  if (paymentStatus && paymentStatus !== 'ALL') {
+    if (!validPaymentStatuses.includes(paymentStatus.toUpperCase())) {
+      const error = new Error(`Invalid payment status filter '${paymentStatus}'. Valid statuses: ${validPaymentStatuses.join(', ')}`);
+      error.statusCode = 400;
+      error.code = 'INVALID_FILTER';
+      throw error;
+    }
+    where.payments = {
+      some: {
+        status: paymentStatus.toUpperCase()
+      }
+    };
+  }
+
+  if (startDate || endDate) {
+    where.createdAt = {};
+    if (startDate) {
+      const s = new Date(startDate);
+      if (!isNaN(s.getTime())) where.createdAt.gte = s;
+    }
+    if (endDate) {
+      const e = new Date(endDate);
+      if (!isNaN(e.getTime())) where.createdAt.lte = e;
+    }
   }
 
   if (search && search.trim()) {
@@ -462,12 +505,14 @@ export async function getAdminOrders({ page = 1, limit = 15, status = null, sear
     ];
   }
 
+  const sortDirection = sort === 'asc' ? 'asc' : 'desc';
+
   const [orders, totalCount] = await Promise.all([
     prisma.order.findMany({
       where,
       skip,
       take: l,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: sortDirection },
       include: {
         user: {
           select: {
@@ -479,6 +524,26 @@ export async function getAdminOrders({ page = 1, limit = 15, status = null, sear
         },
         items: true,
         shippingAddress: true,
+        invoice: {
+          select: {
+            id: true,
+            invoiceNumber: true,
+            status: true,
+            issuedAt: true
+          }
+        },
+        payments: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: {
+            id: true,
+            status: true,
+            amount: true,
+            method: true,
+            providerPaymentId: true,
+            verifiedAt: true
+          }
+        },
         statusHistory: {
           orderBy: { createdAt: 'desc' },
           take: 1

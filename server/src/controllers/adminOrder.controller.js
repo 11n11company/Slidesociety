@@ -11,8 +11,8 @@ import {
  */
 export async function listAllOrders(req, res, next) {
   try {
-    const { page, limit, status, search } = req.query;
-    const result = await getAdminOrders({ page, limit, status, search });
+    const { page, limit, status, paymentStatus, search, startDate, endDate, sort } = req.query;
+    const result = await getAdminOrders({ page, limit, status, paymentStatus, search, startDate, endDate, sort });
 
     return res.status(200).json({
       success: true,
@@ -22,6 +22,15 @@ export async function listAllOrders(req, res, next) {
       }
     });
   } catch (err) {
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({
+        success: false,
+        error: {
+          code: err.code || 'BAD_REQUEST',
+          message: err.message
+        }
+      });
+    }
     next(err);
   }
 }

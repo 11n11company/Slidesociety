@@ -28,26 +28,25 @@ function parseArgs() {
     if (args[i] === '--email' && args[i + 1]) params.email = args[++i];
     if (args[i] === '--name' && args[i + 1]) params.name = args[++i];
     if (args[i] === '--password' && args[i + 1]) params.password = args[++i];
+    if (args[i] === '--role' && args[i + 1]) params.role = args[++i];
   }
   return {
     email: params.email || process.env.ADMIN_EMAIL,
     name: params.name || process.env.ADMIN_NAME || 'Slidescoiety Administrator',
-    password: params.password || process.env.ADMIN_PASSWORD
+    password: params.password || process.env.ADMIN_PASSWORD,
+    role: (params.role || 'ADMIN').toUpperCase()
   };
 }
 
 async function run() {
-  const { email, name, password } = parseArgs();
+  const { email, name, password, role } = parseArgs();
 
   if (!email || !password) {
     console.error(`
 [ERROR] Missing required arguments for admin provisioning.
 
 Usage:
-  node src/utils/createAdmin.js --email <admin-email> --name <full-name> --password <strong-password>
-
-Example:
-  node src/utils/createAdmin.js --email admin@slidescoiety.com --name "Platform Admin" --password "ApexAdmin2026!#"
+  node src/utils/createAdmin.js --email <admin-email> --name <full-name> --password <strong-password> [--role ADMIN|SUPPORT]
     `);
     process.exit(1);
   }
@@ -66,7 +65,7 @@ Example:
   }
 
   const cleanEmail = email.trim().toLowerCase();
-  console.log(`[PROVISION] Checking existing account for [${cleanEmail}]...`);
+  console.log(`[PROVISION] Checking existing account for [${cleanEmail}] with role [${role}]...`);
 
   const passwordHash = await hashPassword(password);
 
@@ -78,26 +77,26 @@ Example:
     const updated = await prisma.user.update({
       where: { id: existing.id },
       data: {
-        role: 'ADMIN',
+        role,
         fullName: name,
         passwordHash,
         isVerified: true
       },
       select: { id: true, email: true, fullName: true, role: true, isVerified: true }
     });
-    console.log(`[SUCCESS] Existing user promoted to ADMIN:`, updated);
+    console.log(`[SUCCESS] Existing user promoted to ${role}:`, updated);
   } else {
     const created = await prisma.user.create({
       data: {
         email: cleanEmail,
         fullName: name,
         passwordHash,
-        role: 'ADMIN',
+        role,
         isVerified: true
       },
       select: { id: true, email: true, fullName: true, role: true, isVerified: true }
     });
-    console.log(`[SUCCESS] New ADMIN account provisioned:`, created);
+    console.log(`[SUCCESS] New ${role} account provisioned:`, created);
   }
 
   await prisma.$disconnect();

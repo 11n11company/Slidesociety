@@ -5,8 +5,12 @@ import authRoutes from './auth.routes.js';
 import cartRoutes from './cart.routes.js';
 import orderRoutes from './order.routes.js';
 import adminOrderRoutes from './adminOrder.routes.js';
+import adminProductRoutes from './adminProduct.routes.js';
+import adminInventoryRoutes from './adminInventory.routes.js';
+import adminCustomerRoutes from './adminCustomer.routes.js';
 import paymentRoutes from './payment.routes.js';
 import invoiceRoutes from './invoice.routes.js';
+import { getOverview } from '../controllers/adminOverview.controller.js';
 import { getCategories } from '../controllers/product.controller.js';
 import { authenticateCustomer, requireRole } from '../middleware/auth.middleware.js';
 
@@ -30,31 +34,30 @@ router.use('/v1/payments', paymentRoutes);
 // /api/v1/invoices (PDF Invoices & Email Resend)
 router.use('/v1/invoices', invoiceRoutes);
 
+// /api/v1/admin/overview (Dashboard Analytics - Accessible by ADMIN & SUPPORT)
+router.get(
+  '/v1/admin/overview',
+  authenticateCustomer,
+  requireRole('ADMIN', 'SUPPORT'),
+  getOverview
+);
+
 // /api/v1/admin/orders (Admin Order Management)
 router.use('/v1/admin/orders', adminOrderRoutes);
+
+// /api/v1/admin/products (Admin Product Management)
+router.use('/v1/admin/products', adminProductRoutes);
+
+// /api/v1/admin/inventory (Admin Inventory Management)
+router.use('/v1/admin/inventory', adminInventoryRoutes);
+
+// /api/v1/admin/customers (Admin Customer Management)
+router.use('/v1/admin/customers', adminCustomerRoutes);
 
 // /api/v1/categories (direct alias)
 router.get('/v1/categories', getCategories);
 
 // /api/v1/products
 router.use('/v1/products', productRoutes);
-
-// /api/v1/admin/overview (Protected by ADMIN role check)
-router.get(
-  '/v1/admin/overview',
-  authenticateCustomer,
-  requireRole('ADMIN'),
-  (req, res) => {
-    res.status(200).json({
-      success: true,
-      message: 'Access granted to Slidescoiety Administration Console.',
-      data: {
-        adminUser: req.user.email,
-        role: req.user.role,
-        systemStatus: 'ONLINE'
-      }
-    });
-  }
-);
 
 export default router;
