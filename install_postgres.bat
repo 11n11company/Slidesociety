@@ -49,3 +49,4 @@ echo  PostgreSQL 16 installation completed successfully!
 echo  You can now return to the chat.
 echo ============================================================================
 pause
+
