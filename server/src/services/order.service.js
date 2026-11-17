@@ -1,6 +1,12 @@
 import { z } from 'zod';
+import crypto from 'crypto';
 import { prisma } from '../config/db.js';
+import { env } from '../config/env.js';
 import { logger } from '../utils/logger.js';
+import {
+  reserveStockForOrder,
+  releaseReservationForOrder
+} from './inventoryReservation.service.js';
 
 // Valid Order Status State Machine Transitions
 const ALLOWED_STATUS_TRANSITIONS = {
@@ -77,37 +83,25 @@ export const updateOrderStatusSchema = z.object({
 /**
  * Generates an atomic, sequential human-readable order number (e.g. SLIDE-20261117-1001)
  */
-async function generateOrderNumber() {
+async function generateOrderNumber(tx = prisma) {
   const now = new Date();
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');
   const day = String(now.getDate()).padStart(2, '0');
   const prefix = `SLIDE-${year}${month}${day}-`;
 
-  const latestOrder = await prisma.order.findFirst({
-    where: {
-      orderNumber: {
-        startsWith: prefix
-      }
-    },
-    orderBy: {
-      orderNumber: 'desc'
-    },
-    select: {
-      orderNumber: true
+  try {
+    const seqResult = await tx.$queryRaw`SELECT nextval('order_number_seq')::text as num`;
+    if (seqResult && seqResult.length > 0) {
+      return `${prefix}${seqResult[0].num}`;
     }
-  });
-
-  let seq = 1001;
-  if (latestOrder && latestOrder.orderNumber) {
-    const parts = latestOrder.orderNumber.split('-');
-    const lastSeq = parseInt(parts[parts.length - 1], 10);
-    if (!isNaN(lastSeq)) {
-      seq = lastSeq + 1;
-    }
+  } catch (err) {
+    logger.warn(`Sequence error in generateOrderNumber: ${err.message}. Using fallback.`);
   }
 
-  return `${prefix}${seq}`;
+  // Fallback if sequence is inaccessible
+  const entropy = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `${prefix}${Date.now().toString().slice(-4)}-${entropy}`;
 }
 
 /**
@@ -211,6 +205,23 @@ export async function createCustomerOrder(userId, input) {
       throw error;
     }
 
+    const currentReserved = product.reservedQuantity || 0;
+    const availableStock = product.stockQuantity - currentReserved;
+    if (availableStock < cartItem.quantity) {
+      const error = new Error(
+        `Insufficient stock for '${product.name}'. Available: ${Math.max(0, availableStock)}, requested: ${cartItem.quantity}.`
+      );
+      error.statusCode = 400;
+      error.code = 'INSUFFICIENT_STOCK';
+      error.details = {
+        productId: product.id,
+        productName: product.name,
+        availableStock: Math.max(0, availableStock),
+        requestedQuantity: cartItem.quantity
+      };
+      throw error;
+    }
+
     const unitPrice = Number(product.priceInr);
     const lineTotal = unitPrice * cartItem.quantity;
     subtotal += lineTotal;
@@ -236,12 +247,13 @@ export async function createCustomerOrder(userId, input) {
   const discountAmount = 0.00;
   const totalAmount = subtotal + shippingAmount + taxAmount - discountAmount;
 
-  const orderNumber = await generateOrderNumber();
-
-  // 6. Prisma Database Transaction (Order creation + status history + cart clearance)
+  // 6. Prisma Database Transaction (Stock reservation + Order creation + cart clearance)
   // If anything fails, transaction rolls back automatically and cart is 100% preserved!
   const createdOrder = await prisma.$transaction(async (tx) => {
-    // 6a. Create Order Record
+    // 6a. Generate Unique Sequential Order Number atomically from PostgreSQL sequence
+    const orderNumber = await generateOrderNumber(tx);
+
+    // 6b. Create Order Record
     const order = await tx.order.create({
       data: {
         orderNumber,
@@ -276,7 +288,18 @@ export async function createCustomerOrder(userId, input) {
       }
     });
 
-    // 6b. Clear Purchased Items from Customer Cart
+    // 6c. Atomically Reserve Stock for Order Items (ACID row lock)
+    // If stock is insufficient, throws 400 INSUFFICIENT_STOCK and transaction rolls back completely!
+    await reserveStockForOrder(tx, {
+      orderId: order.id,
+      items: orderItemsData.map(item => ({
+        productId: item.productId,
+        quantity: item.quantity
+      })),
+      expiryMinutes: env.RESERVATION_EXPIRY_MINUTES
+    });
+
+    // 6d. Clear Purchased Items from Customer Cart
     await tx.cartItem.deleteMany({
       where: { cartId: cart.id }
     });
@@ -431,6 +454,9 @@ export async function cancelCustomerOrder(userId, orderId, reason) {
         notes: reason || 'Cancelled by customer'
       }
     });
+
+    // Release stock reservation and restore inventory (handles pending and confirmed)
+    await releaseReservationForOrder(tx, order.id, { reason: reason || 'Cancelled by customer' });
 
     return updated;
   });
@@ -686,6 +712,10 @@ export async function updateOrderStatusByAdmin(orderId, { newStatus, notes, admi
         notes: notes || `Status updated to ${newStatus} by administrator`
       }
     });
+
+    if (newStatus === 'CANCELLED') {
+      await releaseReservationForOrder(tx, order.id, { reason: notes || `Cancelled by admin [${adminUserId}]` });
+    }
 
     return updated;
   });

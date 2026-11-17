@@ -2,6 +2,7 @@ import app from './app.js';
 import { env } from './config/env.js';
 import { checkDatabaseConnection, prisma } from './config/db.js';
 import { logger } from './utils/logger.js';
+import { expireStaleReservations } from './services/inventoryReservation.service.js';
 
 async function startServer() {
   logger.info(`Starting Slidescoiety Backend in [${env.NODE_ENV}] mode...`);
@@ -19,6 +20,19 @@ async function startServer() {
     logger.info(`Allowed CORS Origin: ${env.CORS_ORIGIN}`);
     logger.info(`========================================================`);
   });
+
+  // Background Job: Expire Stale Stock Reservations
+  const cleanupTimer = setInterval(async () => {
+    try {
+      const expiredCount = await expireStaleReservations();
+      if (expiredCount > 0) {
+        logger.info(`Automated cleanup: Released ${expiredCount} expired stock reservation(s).`);
+      }
+    } catch (err) {
+      logger.error(`Automated reservation cleanup error: ${err.message}`);
+    }
+  }, env.RESERVATION_CLEANUP_INTERVAL_MS);
+  cleanupTimer.unref();
 
   // Graceful shutdown handling
   const shutdown = async (signal) => {

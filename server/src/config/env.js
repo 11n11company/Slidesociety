@@ -44,5 +44,9 @@ export const env = {
   // Razorpay Payment Gateway Configuration
   RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID || 'rzp_test_placeholder_key',
   RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET || 'rzp_test_placeholder_secret',
-  RAZORPAY_WEBHOOK_SECRET: process.env.RAZORPAY_WEBHOOK_SECRET || 'rzp_webhook_secret_placeholder'
+  RAZORPAY_WEBHOOK_SECRET: process.env.RAZORPAY_WEBHOOK_SECRET || 'rzp_webhook_secret_placeholder',
+
+  // Inventory Reservation Settings
+  RESERVATION_EXPIRY_MINUTES: parseInt(process.env.RESERVATION_EXPIRY_MINUTES, 10) || 30,
+  RESERVATION_CLEANUP_INTERVAL_MS: parseInt(process.env.RESERVATION_CLEANUP_INTERVAL_MS, 10) || (5 * 60 * 1000)
 };

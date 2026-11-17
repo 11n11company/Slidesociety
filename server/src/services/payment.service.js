@@ -4,6 +4,11 @@ import { prisma } from '../config/db.js';
 import { env } from '../config/env.js';
 import { logger } from '../utils/logger.js';
 import { createInvoiceForOrder } from './invoice.service.js';
+import {
+  confirmReservationForOrder,
+  releaseReservationForOrder,
+  ensureActiveReservationForPayment
+} from './inventoryReservation.service.js';
 
 // Initialize Razorpay SDK Instance
 const razorpayClient = new Razorpay({
@@ -77,6 +82,11 @@ export async function createPaymentOrder({ userId, orderId }) {
     error.code = 'INVALID_AMOUNT';
     throw error;
   }
+
+  // 3b. Verify active stock reservation or re-reserve if retrying payment
+  await prisma.$transaction(async (tx) => {
+    await ensureActiveReservationForPayment(tx, order.id);
+  });
 
   // 4. Create Razorpay Order with Server Credentials
   let razorpayOrder;
@@ -481,6 +491,9 @@ export async function verifyPaymentSignature({
           notes: `Payment verified & captured via Razorpay (Method: ${(rzpPayment.method || 'razorpay').toUpperCase()}, Payment ID: ${razorpayPaymentId})`
         }
       });
+
+      // Confirm stock reservation and commit physical inventory
+      await confirmReservationForOrder(tx, order.id);
     }
 
     return { payment: updatedPayment, order: updatedOrder };
@@ -644,6 +657,9 @@ export async function processWebhook({ rawBody, signature, eventIdHeader, event 
                 notes: `Order confirmed via Razorpay Webhook [${eventType}] (Payment ID: ${razorpayPaymentId})`
               }
             });
+
+            // Confirm stock reservation and commit physical inventory
+            await confirmReservationForOrder(tx, payment.orderId);
           }
         }
       }

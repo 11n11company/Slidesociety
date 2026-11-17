@@ -237,11 +237,19 @@ export default function AdminInventory({ currentUser }) {
                     <td className="py-3.5 px-3 text-neutral-300 font-mono text-[11px]">
                       {item.category}
                     </td>
-                    <td className="py-3.5 px-3 font-mono font-bold text-base text-white">
-                      {item.stockQuantity}
+                    <td className="py-3.5 px-3 font-mono">
+                      <div className="font-bold text-base text-white">
+                        {item.availableQuantity !== undefined ? item.availableQuantity : item.stockQuantity}
+                        <span className="text-[10px] text-neutral-400 font-normal ml-1">avail</span>
+                      </div>
+                      {item.reservedQuantity > 0 && (
+                        <div className="text-[10px] text-amber-400 font-medium">
+                          {item.physicalStock || item.stockQuantity} physical ({item.reservedQuantity} reserved)
+                        </div>
+                      )}
                     </td>
                     <td className="py-3.5 px-3">
-                      {getStockStatusPill(item.stockStatus, item.stockQuantity)}
+                      {getStockStatusPill(item.stockStatus, item.availableQuantity !== undefined ? item.availableQuantity : item.stockQuantity)}
                     </td>
                     <td className="py-3.5 px-3">
                       {item.isAvailable ? (

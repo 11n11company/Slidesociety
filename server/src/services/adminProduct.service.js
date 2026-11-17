@@ -69,6 +69,8 @@ export const updateStockSchema = z.object({
 
 export function formatAdminProduct(prod) {
   if (!prod) return null;
+  const reserved = prod.reservedQuantity || 0;
+  const available = Math.max(0, prod.stockQuantity - reserved);
   return {
     ...prod,
     price: Number(prod.priceInr),
@@ -77,6 +79,10 @@ export function formatAdminProduct(prod) {
     name: prod.name,
     description: prod.specDescription,
     specDescription: prod.specDescription,
+    physicalStock: prod.stockQuantity,
+    reservedQuantity: reserved,
+    availableStock: available,
+    availableQuantity: available,
     orderCount: prod._count?.orderItems !== undefined ? prod._count.orderItems : undefined
   };
 }
@@ -340,6 +346,7 @@ export async function getAdminInventory({
         category: true,
         priceInr: true,
         stockQuantity: true,
+        reservedQuantity: true,
         isAvailable: true,
         updatedAt: true
       }
@@ -348,15 +355,22 @@ export async function getAdminInventory({
   ]);
 
   return {
-    inventory: products.map(prod => ({
-      ...prod,
-      priceInr: Number(prod.priceInr),
-      stockStatus: prod.stockQuantity <= 0
-        ? 'OUT_OF_STOCK'
-        : prod.stockQuantity <= 5
-        ? 'LOW_STOCK'
-        : 'IN_STOCK'
-    })),
+    inventory: products.map(prod => {
+      const reserved = prod.reservedQuantity || 0;
+      const available = Math.max(0, prod.stockQuantity - reserved);
+      return {
+        ...prod,
+        priceInr: Number(prod.priceInr),
+        physicalStock: prod.stockQuantity,
+        reservedQuantity: reserved,
+        availableQuantity: available,
+        stockStatus: available <= 0
+          ? 'OUT_OF_STOCK'
+          : available <= 5
+          ? 'LOW_STOCK'
+          : 'IN_STOCK'
+      };
+    }),
     pagination: {
       page: p,
       limit: l,
@@ -391,8 +405,11 @@ export async function updateProductStock(productId, input) {
       newStock = product.stockQuantity + validated.delta;
     }
 
-    if (newStock < 0) {
-      const error = new Error(`Cannot reduce stock below zero. Current stock is ${product.stockQuantity}, requested adjustment results in ${newStock}.`);
+    const activeReserved = product.reservedQuantity || 0;
+    if (newStock < 0 || newStock < activeReserved) {
+      const error = new Error(
+        `Cannot reduce stock below active reserved quantity (${activeReserved}). Requested stock ${newStock} would make available inventory negative.`
+      );
       error.statusCode = 400;
       error.code = 'NEGATIVE_INVENTORY_PROHIBITED';
       throw error;
@@ -406,12 +423,14 @@ export async function updateProductStock(productId, input) {
       }
     });
 
-    logger.info(`Stock updated for [${productId}]: ${product.stockQuantity} -> ${newStock}`);
+    logger.info(`Stock updated for [${productId}]: ${product.stockQuantity} -> ${newStock} (Reserved: ${activeReserved})`);
     return {
       id: updated.id,
       name: updated.name,
       previousStock: product.stockQuantity,
       currentStock: updated.stockQuantity,
+      reservedQuantity: updated.reservedQuantity,
+      availableQuantity: Math.max(0, updated.stockQuantity - (updated.reservedQuantity || 0)),
       isAvailable: updated.isAvailable
     };
   });

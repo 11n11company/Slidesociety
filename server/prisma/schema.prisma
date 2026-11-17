@@ -43,6 +43,13 @@ enum PaymentStatus {
   REFUNDED
 }
 
+enum ReservationStatus {
+  RESERVED
+  CONFIRMED
+  RELEASED
+  EXPIRED
+}
+
 model User {
   id                  String               @id @default(uuid())
   email               String               @unique
@@ -103,6 +110,7 @@ model Product {
   rating             Float            @default(5.0)
   isAvailable        Boolean          @default(true)
   stockQuantity      Int              @default(50)
+  reservedQuantity   Int              @default(0)
   imageUrl           String           @db.Text
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
@@ -110,6 +118,7 @@ model Product {
   variants           ProductVariant[]
   cartItems          CartItem[]
   orderItems         OrderItem[]
+  reservations       StockReservation[]
 
   @@index([category])
   @@index([isAvailable])
@@ -185,6 +194,7 @@ model Order {
   payments                Payment[]
   invoice                 Invoice?
   statusHistory           OrderStatusHistory[]
+  reservations            StockReservation[]
 
   @@index([userId])
   @@index([orderNumber])
@@ -315,4 +325,27 @@ model OrderStatusHistory {
 
   @@index([orderId])
 }
+
+model StockReservation {
+  id          String            @id @default(uuid())
+  orderId     String
+  productId   String
+  quantity    Int
+  status      ReservationStatus @default(RESERVED)
+  expiresAt   DateTime
+  confirmedAt DateTime?
+  releasedAt  DateTime?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  order       Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product     Product           @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([orderId, productId])
+  @@index([orderId])
+  @@index([productId])
+  @@index([status])
+  @@index([expiresAt])
+}
+
 

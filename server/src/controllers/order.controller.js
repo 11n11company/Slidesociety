@@ -47,6 +47,15 @@ export async function createOrder(req, res, next) {
         }
       });
     }
+    if (err.code === 'P2002') {
+      return res.status(409).json({
+        success: false,
+        error: {
+          code: 'ORDER_CONFLICT',
+          message: 'Concurrent order creation conflict. Please retry.'
+        }
+      });
+    }
     next(err);
   }
 }
@@ -133,6 +142,15 @@ export async function cancelOrder(req, res, next) {
         error: {
           code: err.code || 'BAD_REQUEST',
           message: err.message
+        }
+      });
+    }
+    if (err.code === 'P2002') {
+      return res.status(409).json({
+        success: false,
+        error: {
+          code: 'ORDER_CONFLICT',
+          message: 'Concurrent order creation conflict. Please retry.'
         }
       });
     }
