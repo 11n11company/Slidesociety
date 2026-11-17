@@ -558,6 +558,26 @@ export async function updateOrderStatusByAdmin(orderId, { newStatus, notes, admi
     throw error;
   }
 
+  // Enforce Payment Requirement: Do not allow an unpaid or merely authorized order to enter production
+  const productionStatuses = ['PROCESSING', 'FABRICATING', 'READY_TO_SHIP', 'SHIPPED', 'DELIVERED'];
+  if (productionStatuses.includes(newStatus)) {
+    const capturedPayment = await prisma.payment.findFirst({
+      where: {
+        orderId: order.id,
+        status: 'CAPTURED'
+      }
+    });
+
+    if (!capturedPayment) {
+      const error = new Error(
+        `Order [${order.orderNumber}] cannot transition to production status '${newStatus}' without a verified CAPTURED payment.`
+      );
+      error.statusCode = 400;
+      error.code = 'PAYMENT_REQUIRED';
+      throw error;
+    }
+  }
+
   const updatedOrder = await prisma.$transaction(async (tx) => {
     const updated = await tx.order.update({
       where: { id: order.id },

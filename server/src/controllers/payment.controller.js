@@ -54,13 +54,15 @@ export async function verifyPayment(req, res, next) {
 
     return res.status(200).json({
       success: true,
-      message: result.isIdempotentReplay
+      message: result.message || (result.isIdempotentReplay
         ? 'Payment already verified and confirmed'
-        : 'Payment verified and captured successfully! Order confirmed.',
+        : 'Payment verified and captured successfully! Order confirmed.'),
       data: {
         order: result.order,
         payment: result.payment,
-        isIdempotentReplay: result.isIdempotentReplay
+        isIdempotentReplay: result.isIdempotentReplay || false,
+        isCaptured: result.isCaptured,
+        paymentStatus: result.paymentStatus
       }
     });
   } catch (err) {
@@ -84,11 +86,13 @@ export async function verifyPayment(req, res, next) {
 export async function handleWebhook(req, res, next) {
   try {
     const signature = req.headers['x-razorpay-signature'];
+    const eventIdHeader = req.headers['x-razorpay-event-id'];
     const rawBody = req.rawBody;
 
     const result = await processWebhook({
       rawBody,
       signature,
+      eventIdHeader,
       event: req.body
     });
 
@@ -140,3 +144,4 @@ export async function getPaymentStatus(req, res, next) {
     next(err);
   }
 }
+
