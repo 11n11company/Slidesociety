@@ -48,7 +48,15 @@ if (env.NODE_ENV !== 'test') {
 
 // 4. Body & Cookie Parsers
 app.use(cookieParser(env.COOKIE_SECRET));
-app.use(express.json({ limit: '10mb' }));
+app.use(
+  express.json({
+    limit: '10mb',
+    verify: (req, res, buf) => {
+      // Preserve raw request body buffer for signed webhook verification (Razorpay)
+      req.rawBody = buf;
+    }
+  })
+);
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // 5. Mount API Routes

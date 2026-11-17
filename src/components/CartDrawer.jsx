@@ -14,10 +14,14 @@ import {
   Loader2,
   Package,
   User,
-  ShieldCheck
+  ShieldCheck,
+  CreditCard,
+  QrCode,
+  RotateCcw
 } from 'lucide-react';
 import { byId, fmt } from '../data/products';
 import { orderApi } from '../services/orderApi';
+import { paymentApi } from '../services/paymentApi';
 
 export default function CartDrawer({
   isOpen,
@@ -30,10 +34,14 @@ export default function CartDrawer({
   onOpenAccount,
   onViewOrders
 }) {
-  const [step, setStep] = useState('cart'); // 'cart' | 'checkout' | 'confirmation'
+  const [step, setStep] = useState('cart'); // 'cart' | 'checkout' | 'payment' | 'confirmation'
   const [loading, setLoading] = useState(false);
+  const [verifyingPayment, setVerifyingPayment] = useState(false);
   const [error, setError] = useState('');
   const [placedOrder, setPlacedOrder] = useState(null);
+  const [paymentInfo, setPaymentInfo] = useState(null);
+  const [paymentDismissed, setPaymentDismissed] = useState(false);
+  const [qrCodeData, setQrCodeData] = useState(null);
 
   // Address form fields
   const [recipientName, setRecipientName] = useState('');
@@ -46,10 +54,11 @@ export default function CartDrawer({
   const [country, setCountry] = useState('India');
   const [customerNotes, setCustomerNotes] = useState('');
 
-  // Reset drawer step on close
+  // Reset drawer state on close
   const handleClose = () => {
     setStep('cart');
     setError('');
+    setPaymentDismissed(false);
     onClose();
   };
 
@@ -112,10 +121,94 @@ export default function CartDrawer({
 
       setPlacedOrder(newOrder);
       onClearCart?.();
-      setStep('confirmation');
-      onShowToast?.(`Order ${newOrder.orderNumber} confirmed!`);
+      setStep('payment');
+      onShowToast?.(`Order ${newOrder.orderNumber} registered. Complete payment below.`);
+
+      // Automatically trigger payment modal
+      initiateRazorpayPayment(newOrder);
     } catch (err) {
       setError(err.message || 'Failed to place order. Please review your shipping details and try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Razorpay Checkout Launcher
+  const initiateRazorpayPayment = async (orderToPay = placedOrder) => {
+    if (!orderToPay) return;
+    setError('');
+    setLoading(true);
+    setPaymentDismissed(false);
+
+    try {
+      // 1. Create Razorpay Payment Order on Backend
+      const payRes = await paymentApi.createPayment(orderToPay.id);
+      const checkoutData = payRes.data;
+
+      if (checkoutData.qrCode) {
+        setQrCodeData(checkoutData.qrCode);
+      }
+
+      // 2. Load Razorpay Checkout Script
+      const scriptLoaded = await paymentApi.loadRazorpayScript();
+      if (!scriptLoaded) {
+        throw new Error('Unable to load Razorpay payment gateway. Please check your internet connection and retry.');
+      }
+
+      // 3. Configure Razorpay Modal Options
+      const options = {
+        key: checkoutData.keyId,
+        amount: checkoutData.amountPaise,
+        currency: checkoutData.currency,
+        name: 'Slidescoiety Sim Racing Store',
+        description: `Order ${checkoutData.orderNumber}`,
+        order_id: checkoutData.razorpayOrderId,
+        prefill: {
+          name: checkoutData.customer?.name || currentUser?.fullName || '',
+          email: checkoutData.customer?.email || currentUser?.email || '',
+          contact: checkoutData.customer?.phone || ''
+        },
+        theme: {
+          color: '#e50914',
+          backdrop_color: 'rgba(0,0,0,0.85)'
+        },
+        handler: async function (response) {
+          try {
+            setVerifyingPayment(true);
+            const verifyRes = await paymentApi.verifyPayment({
+              orderId: orderToPay.id,
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature
+            });
+
+            setPaymentInfo(verifyRes.data.payment);
+            setPlacedOrder(verifyRes.data.order);
+            setStep('confirmation');
+            onShowToast?.(`Payment verified! Order ${orderToPay.orderNumber} confirmed.`);
+          } catch (verifyErr) {
+            setError(verifyErr.message || 'Cryptographic signature verification failed.');
+          } finally {
+            setVerifyingPayment(false);
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            setPaymentDismissed(true);
+            onShowToast?.('Payment modal dismissed. You can retry payment anytime.');
+          }
+        }
+      };
+
+      const razorpayInstance = new window.Razorpay(options);
+      razorpayInstance.on('payment.failed', function (resp) {
+        setError(resp.error?.description || 'Payment was declined or cancelled.');
+        setPaymentDismissed(true);
+      });
+      razorpayInstance.open();
+    } catch (err) {
+      setError(err.message || 'Payment initiation failed. Please retry.');
+      setPaymentDismissed(true);
     } finally {
       setLoading(false);
     }
@@ -147,7 +240,9 @@ export default function CartDrawer({
             <ShoppingBag className="w-5 h-5 text-[#e50914]" />
             <h3 className="font-display font-black text-2xl uppercase tracking-tight text-white">
               {step === 'confirmation'
-                ? 'Order Confirmed'
+                ? 'Order Confirmed & Paid'
+                : step === 'payment'
+                ? 'Payment & Gateway'
                 : step === 'checkout'
                 ? 'Checkout & Delivery'
                 : `Your Cart (${items.reduce((sum, it) => sum + it.qty, 0)})`}
@@ -241,7 +336,7 @@ export default function CartDrawer({
                     <span className="font-mono font-bold text-white">{fmt(subtotal)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>GST (18% estimated)</span>
+                    <span>GST (18% included)</span>
                     <span className="font-mono text-white">{fmt(tax)}</span>
                   </div>
                   <div className="flex justify-between">
@@ -293,10 +388,10 @@ export default function CartDrawer({
               <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/30 text-xs text-blue-200 space-y-1">
                 <div className="flex items-center gap-1.5 font-bold">
                   <ShieldCheck className="w-4 h-4 text-blue-400" />
-                  <span>Phase 3A Order Placement</span>
+                  <span>Phase 3B Razorpay Payment Gateway</span>
                 </div>
                 <p className="text-[11px] text-blue-300 leading-relaxed">
-                  Your order will be registered in PostgreSQL with status <strong className="text-white">PENDING</strong>. Integrated Razorpay & UPI payment will be enabled in Phase 3B.
+                  Your order will be created and directed to secure Razorpay checkout supporting UPI, dynamic QR, cards, and netbanking.
                 </p>
               </div>
 
@@ -464,12 +559,12 @@ export default function CartDrawer({
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Registering Order in Telemetry...</span>
+                    <span>Registering Order & Launching Gateway...</span>
                   </>
                 ) : (
                   <>
-                    <ShieldCheck className="w-4 h-4" />
-                    <span>Confirm & Place Order</span>
+                    <CreditCard className="w-4 h-4" />
+                    <span>Confirm Order & Pay with Razorpay</span>
                   </>
                 )}
               </button>
@@ -478,7 +573,109 @@ export default function CartDrawer({
         )}
 
         {/* ======================================================== */}
-        {/* STEP 3: ORDER CONFIRMATION SCREEN                        */}
+        {/* STEP 3: PAYMENT SCREEN & RETRY OPTIONS                   */}
+        {/* ======================================================== */}
+        {step === 'payment' && placedOrder && (
+          <div className="flex-1 flex flex-col p-6 overflow-y-auto space-y-6 text-center">
+            <div className="pt-6 space-y-2">
+              <div className="w-14 h-14 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center mx-auto text-amber-400">
+                <CreditCard className="w-7 h-7" />
+              </div>
+              <h4 className="font-display font-black text-2xl uppercase tracking-tight text-white">
+                Payment Pending
+              </h4>
+              <p className="text-xs text-neutral-400 max-w-sm mx-auto">
+                Order <strong className="text-white">{placedOrder.orderNumber}</strong> has been created. Complete payment via Razorpay to initiate fabrication.
+              </p>
+            </div>
+
+            {error && (
+              <div className="p-3.5 rounded-xl bg-red-500/15 border border-red-500/40 text-xs text-red-200 flex items-start gap-2.5 text-left">
+                <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            {verifyingPayment && (
+              <div className="p-4 rounded-xl bg-blue-500/15 border border-blue-500/30 text-xs text-blue-200 flex items-center justify-center gap-3">
+                <Loader2 className="w-5 h-5 animate-spin text-blue-400" />
+                <span>Verifying cryptographic signature with payment gateway...</span>
+              </div>
+            )}
+
+            {/* Order Price Overview */}
+            <div className="p-4 rounded-2xl bg-black/50 border border-white/10 text-left space-y-2.5 font-mono text-xs">
+              <div className="flex justify-between items-center">
+                <span className="text-neutral-400">Order Number</span>
+                <span className="text-white font-bold">{placedOrder.orderNumber}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-neutral-400">Payable Amount</span>
+                <span className="text-[#e50914] font-bold text-base">
+                  {fmt(Number(placedOrder.totalAmount))}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-[11px] text-neutral-500">
+                <span>Payment Gateway</span>
+                <span>Razorpay (Cards, UPI, QR, Netbanking)</span>
+              </div>
+            </div>
+
+            {/* Dynamic UPI QR display (if returned by account) */}
+            {qrCodeData?.image_url && (
+              <div className="p-4 rounded-2xl bg-black/60 border border-white/10 space-y-3">
+                <div className="flex items-center justify-center gap-2 text-xs font-mono font-bold uppercase text-white">
+                  <QrCode className="w-4 h-4 text-[#e50914]" />
+                  <span>Scan Dynamic UPI QR</span>
+                </div>
+                <img
+                  src={qrCodeData.image_url}
+                  alt="Razorpay Dynamic UPI QR"
+                  className="w-44 h-44 mx-auto rounded-xl border border-white/20 p-2 bg-white"
+                />
+                <p className="text-[11px] text-neutral-400">
+                  Scan using Google Pay, PhonePe, Paytm or any UPI app.
+                </p>
+              </div>
+            )}
+
+            {/* Payment Actions */}
+            <div className="pt-2 space-y-3">
+              <button
+                type="button"
+                onClick={() => initiateRazorpayPayment(placedOrder)}
+                disabled={loading || verifyingPayment}
+                className="w-full py-3.5 rounded-full bg-[#e50914] hover:bg-[#ff1f2d] text-white font-bold text-xs uppercase tracking-wider transition-all shadow-xl shadow-[#e50914]/30 flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Opening Gateway...</span>
+                  </>
+                ) : (
+                  <>
+                    <RotateCcw className="w-4 h-4" />
+                    <span>{paymentDismissed ? 'Retry Payment Now' : 'Pay Now via Razorpay'}</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  handleClose();
+                  onViewOrders?.();
+                }}
+                className="w-full py-3 rounded-full text-xs font-bold text-neutral-400 hover:text-white border border-white/10 hover:bg-white/5 transition-all"
+              >
+                Pay Later (Saved in My Orders)
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ======================================================== */}
+        {/* STEP 4: ORDER CONFIRMATION & PAID SCREEN                 */}
         {/* ======================================================== */}
         {step === 'confirmation' && placedOrder && (
           <div className="flex-1 flex flex-col p-6 overflow-y-auto space-y-6 text-center">
@@ -487,10 +684,10 @@ export default function CartDrawer({
                 <CheckCircle className="w-8 h-8" />
               </div>
               <h4 className="font-display font-black text-2xl uppercase tracking-tight text-white">
-                Order Placed Successfully!
+                Payment Verified & Order Confirmed!
               </h4>
               <p className="text-xs text-neutral-400 max-w-sm mx-auto">
-                Your sim racing order has been officially registered with our engineering pit crew.
+                Payment received via Razorpay. Your sim racing cockpit is officially queued for fabrication and assembly.
               </p>
             </div>
 
@@ -502,12 +699,20 @@ export default function CartDrawer({
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-neutral-400">Status</span>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold bg-blue-500/20 text-blue-300 border border-blue-500/40">
                   {placedOrder.status}
                 </span>
               </div>
+              {paymentInfo?.providerPaymentId && (
+                <div className="flex justify-between items-center">
+                  <span className="text-neutral-400">Payment ID</span>
+                  <span className="text-emerald-400 font-mono text-[11px] truncate max-w-[200px]">
+                    {paymentInfo.providerPaymentId}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between items-center">
-                <span className="text-neutral-400">Total Charged</span>
+                <span className="text-neutral-400">Amount Paid</span>
                 <span className="text-white font-bold">{fmt(Number(placedOrder.totalAmount))}</span>
               </div>
               <div className="flex justify-between items-center">

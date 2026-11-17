@@ -5,6 +5,7 @@ import authRoutes from './auth.routes.js';
 import cartRoutes from './cart.routes.js';
 import orderRoutes from './order.routes.js';
 import adminOrderRoutes from './adminOrder.routes.js';
+import paymentRoutes from './payment.routes.js';
 import { getCategories } from '../controllers/product.controller.js';
 import { authenticateCustomer, requireRole } from '../middleware/auth.middleware.js';
 
@@ -21,6 +22,9 @@ router.use('/v1/cart', cartRoutes);
 
 // /api/v1/orders (Customer Order Management)
 router.use('/v1/orders', orderRoutes);
+
+// /api/v1/payments (Razorpay Payment Integration)
+router.use('/v1/payments', paymentRoutes);
 
 // /api/v1/admin/orders (Admin Order Management)
 router.use('/v1/admin/orders', adminOrderRoutes);

@@ -27,5 +27,10 @@ export const env = {
   EMAIL_SECURE: process.env.EMAIL_SECURE === 'true',
   EMAIL_USER: process.env.EMAIL_USER || null,
   EMAIL_PASS: process.env.EMAIL_PASS || null,
-  EMAIL_FROM: process.env.EMAIL_FROM || 'Slidescoiety Sim Racing Store <support@slidescoiety.com>'
+  EMAIL_FROM: process.env.EMAIL_FROM || 'Slidescoiety Sim Racing Store <support@slidescoiety.com>',
+
+  // Razorpay Payment Gateway Configuration
+  RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID || 'rzp_test_placeholder_key',
+  RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET || 'rzp_test_placeholder_secret',
+  RAZORPAY_WEBHOOK_SECRET: process.env.RAZORPAY_WEBHOOK_SECRET || 'rzp_webhook_secret_placeholder'
 };

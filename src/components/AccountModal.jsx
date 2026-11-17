@@ -19,10 +19,13 @@ import {
   XCircle,
   Loader2,
   Calendar,
-  FileText
+  FileText,
+  CreditCard,
+  RotateCcw
 } from 'lucide-react';
 import { authApi } from '../services/authApi';
 import { orderApi } from '../services/orderApi';
+import { paymentApi } from '../services/paymentApi';
 import { fmt } from '../data/products';
 
 export default function AccountModal({
@@ -52,6 +55,7 @@ export default function AccountModal({
   const [cancelReason, setCancelReason] = useState('');
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [payingOrder, setPayingOrder] = useState(false);
 
   // Status Badge Mapper
   const getStatusBadge = (status) => {
@@ -142,6 +146,75 @@ export default function AccountModal({
       setError(err.message || 'Failed to cancel order.');
     } finally {
       setCancelling(false);
+    }
+  };
+
+  // Pay order with Razorpay
+  const handlePayOrder = async (orderToPay = selectedOrder) => {
+    if (!orderToPay) return;
+    setPayingOrder(true);
+    setError('');
+
+    try {
+      const payRes = await paymentApi.createPayment(orderToPay.id);
+      const checkoutData = payRes.data;
+
+      const scriptLoaded = await paymentApi.loadRazorpayScript();
+      if (!scriptLoaded) {
+        throw new Error('Unable to load Razorpay payment gateway.');
+      }
+
+      const options = {
+        key: checkoutData.keyId,
+        amount: checkoutData.amountPaise,
+        currency: checkoutData.currency,
+        name: 'Slidescoiety Sim Racing Store',
+        description: `Order ${checkoutData.orderNumber}`,
+        order_id: checkoutData.razorpayOrderId,
+        prefill: {
+          name: checkoutData.customer?.name || currentUser?.fullName || '',
+          email: checkoutData.customer?.email || currentUser?.email || '',
+          contact: checkoutData.customer?.phone || ''
+        },
+        theme: {
+          color: '#e50914'
+        },
+        handler: async function (response) {
+          try {
+            setPayingOrder(true);
+            const verifyRes = await paymentApi.verifyPayment({
+              orderId: orderToPay.id,
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature
+            });
+
+            setSelectedOrder(verifyRes.data.order);
+            onShowToast?.(`Payment confirmed! Order ${orderToPay.orderNumber} is now confirmed.`);
+            loadOrders();
+          } catch (verifyErr) {
+            setError(verifyErr.message || 'Signature verification failed.');
+          } finally {
+            setPayingOrder(false);
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            setPayingOrder(false);
+            onShowToast?.('Payment modal dismissed. You can retry payment anytime.');
+          }
+        }
+      };
+
+      const razorpayInstance = new window.Razorpay(options);
+      razorpayInstance.on('payment.failed', function (resp) {
+        setError(resp.error?.description || 'Payment was declined or cancelled.');
+        setPayingOrder(false);
+      });
+      razorpayInstance.open();
+    } catch (err) {
+      setError(err.message || 'Failed to initiate payment.');
+      setPayingOrder(false);
     }
   };
 
@@ -530,6 +603,42 @@ export default function AccountModal({
                       </div>
                     );
                   })()}
+
+                  {/* Payment Action Banner for Unpaid PENDING Orders */}
+                  {selectedOrder.status === 'PENDING' && (
+                    <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-3 text-left">
+                      <div>
+                        <div className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                          <CreditCard className="w-4 h-4 text-amber-400" />
+                          <span>Payment Awaiting Completion</span>
+                        </div>
+                        <div className="text-[11px] text-neutral-400 mt-0.5">
+                          Pay securely via Razorpay (UPI, Cards, QR, Netbanking) to initiate fabrication.
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handlePayOrder(selectedOrder)}
+                        disabled={payingOrder}
+                        className="px-4 py-2 rounded-xl bg-[#e50914] hover:bg-[#ff1f2d] text-white text-xs font-bold transition-all shadow-md shadow-[#e50914]/40 flex items-center gap-1.5 shrink-0 disabled:opacity-50"
+                      >
+                        {payingOrder ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <RotateCcw className="w-3.5 h-3.5" />
+                        )}
+                        <span>Pay {fmt(Number(selectedOrder.totalAmount))}</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Payment Confirmed Banner for Paid Orders */}
+                  {selectedOrder.status !== 'PENDING' && selectedOrder.status !== 'CANCELLED' && (
+                    <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center gap-2 text-xs text-emerald-300">
+                      <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>Payment Verified & Captured via Razorpay Gateway</span>
+                    </div>
+                  )}
 
                   {/* Cancel Confirmation Prompt */}
                   {showCancelModal && (

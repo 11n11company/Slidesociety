@@ -33,10 +33,13 @@ enum OrderStatus {
 }
 
 enum PaymentStatus {
+  CREATED
+  PENDING
   INITIATED
   AUTHORIZED
   CAPTURED
   FAILED
+  CANCELLED
   REFUNDED
 }
 
@@ -209,26 +212,44 @@ model OrderItem {
 }
 
 model Payment {
-  id               String        @id @default(uuid())
-  orderId          String
-  paymentGateway   String        @default("RAZORPAY")
-  gatewayOrderId   String
-  gatewayPaymentId String?       @unique
-  gatewaySignature String?
-  amount           Decimal       @db.Decimal(12, 2)
-  currency         String        @default("INR")
-  status           PaymentStatus @default(INITIATED)
-  method           String?       // "upi", "card", "netbanking"
-  rawResponse      String?       @db.Text
-  paidAt           DateTime?
-  createdAt        DateTime      @default(now())
+  id                String        @id @default(uuid())
+  orderId           String
+  provider          String        @default("RAZORPAY")
+  providerOrderId   String
+  providerPaymentId String?       @unique
+  paymentGateway    String        @default("RAZORPAY")
+  gatewayOrderId    String?
+  gatewayPaymentId  String?
+  gatewaySignature  String?
+  amount            Decimal       @db.Decimal(12, 2)
+  currency          String        @default("INR")
+  status            PaymentStatus @default(CREATED)
+  method            String?       // "upi", "card", "netbanking"
+  failureReason     String?       @db.Text
+  rawResponse       String?       @db.Text
+  verifiedAt        DateTime?
+  paidAt            DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 
-  order            Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order             Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
+  @@index([providerOrderId])
+  @@index([providerPaymentId])
   @@index([gatewayOrderId])
   @@index([gatewayPaymentId])
   @@index([status])
+}
+
+model ProcessedWebhookEvent {
+  id          String   @id // Razorpay Event ID (e.g. event_...)
+  eventType   String
+  entityId    String?  // Payment ID or Order ID
+  payload     String?  @db.Text
+  processedAt DateTime @default(now())
+
+  @@index([eventType])
 }
 
 model Invoice {
