@@ -17,3 +17,4 @@ router.get('/', requireRole('ADMIN', 'SUPPORT'), listInventory);
 router.patch('/:id/stock', requireRole('ADMIN'), updateStock);
 
 export default router;
+

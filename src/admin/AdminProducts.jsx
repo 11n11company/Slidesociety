@@ -1,0 +1,610 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Package,
+  Plus,
+  Edit2,
+  Trash2,
+  Search,
+  Filter,
+  RefreshCw,
+  AlertCircle,
+  CheckCircle2,
+  X,
+  Eye,
+  EyeOff,
+  Image,
+  DollarSign
+} from 'lucide-react';
+import { adminApi } from '../services/adminApi';
+import { fmt } from '../data/products';
+
+export default function AdminProducts({ currentUser }) {
+  const [products, setProducts] = useState([]);
+  const [pagination, setPagination] = useState({ page: 1, limit: 20, totalCount: 0, totalPages: 1 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+
+  // Search & Filter
+  const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('ALL');
+
+  // Add / Edit Modal State
+  const [showModal, setShowModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [formLoading, setFormLoading] = useState(false);
+  const [formError, setFormError] = useState('');
+
+  // Form Fields
+  const [id, setId] = useState('');
+  const [name, setName] = useState('');
+  const [category, setCategory] = useState('Cockpit frames');
+  const [priceInr, setPriceInr] = useState('');
+  const [stockQuantity, setStockQuantity] = useState('20');
+  const [specDescription, setSpecDescription] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
+  const [isAvailable, setIsAvailable] = useState(true);
+
+  // Deactivate / Delete Confirmation State
+  const [productToDelete, setProductToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const isSupport = currentUser?.role === 'SUPPORT';
+
+  const loadProducts = async (page = 1) => {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await adminApi.getProducts({
+        page,
+        limit: 20,
+        search,
+        category: categoryFilter
+      });
+      setProducts(res?.data?.products || []);
+      setPagination(res?.data?.pagination || { page: 1, limit: 20, totalCount: 0, totalPages: 1 });
+    } catch (err) {
+      setError(err.message || 'Failed to load catalog products.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadProducts(1);
+  }, [categoryFilter]);
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    loadProducts(1);
+  };
+
+  // Open Create Modal
+  const handleOpenCreate = () => {
+    if (isSupport) return;
+    setIsEditing(false);
+    setEditingId(null);
+    setId('');
+    setName('');
+    setCategory('Cockpit frames');
+    setPriceInr('');
+    setStockQuantity('20');
+    setSpecDescription('');
+    setImageUrl('/hero-backdrop-hd.jpg');
+    setIsAvailable(true);
+    setFormError('');
+    setShowModal(true);
+  };
+
+  // Open Edit Modal
+  const handleOpenEdit = (p) => {
+    if (isSupport) return;
+    setIsEditing(true);
+    setEditingId(p.id);
+    setId(p.id);
+    setName(p.name || p.title || '');
+    setCategory(p.category || 'Cockpit frames');
+    setPriceInr(String(p.priceInr || p.price || ''));
+    setStockQuantity(String(p.stockQuantity !== undefined ? p.stockQuantity : 20));
+    setSpecDescription(p.specDescription || p.description || '');
+    setImageUrl(p.imageUrl || '/hero-backdrop-hd.jpg');
+    setIsAvailable(Boolean(p.isAvailable));
+    setFormError('');
+    setShowModal(true);
+  };
+
+  // Handle Form Submission
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    setFormError('');
+    setSuccessMsg('');
+
+    // Form Validations
+    if (!name.trim()) {
+      setFormError('Product name is required.');
+      return;
+    }
+    const numPrice = Number(priceInr);
+    if (isNaN(numPrice) || numPrice <= 0) {
+      setFormError('Price must be greater than zero.');
+      return;
+    }
+    const numStock = parseInt(stockQuantity, 10);
+    if (isNaN(numStock) || numStock < 0) {
+      setFormError('Stock quantity cannot be negative.');
+      return;
+    }
+    if (!imageUrl.trim()) {
+      setFormError('Product image URL is required.');
+      return;
+    }
+
+    setFormLoading(true);
+
+    try {
+      if (isEditing) {
+        await adminApi.updateProduct(editingId, {
+          name: name.trim(),
+          category: category.trim(),
+          priceInr: numPrice,
+          stockQuantity: numStock,
+          specDescription: specDescription.trim(),
+          imageUrl: imageUrl.trim(),
+          isAvailable
+        });
+        setSuccessMsg(`Product '${name}' updated successfully.`);
+      } else {
+        const cleanSlug = id.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
+        if (!cleanSlug) {
+          throw new Error('Please enter a valid product identifier slug.');
+        }
+        await adminApi.createProduct({
+          id: cleanSlug,
+          name: name.trim(),
+          category: category.trim(),
+          priceInr: numPrice,
+          stockQuantity: numStock,
+          specDescription: specDescription.trim() || 'Precision motorsport simulator hardware.',
+          imageUrl: imageUrl.trim(),
+          isAvailable
+        });
+        setSuccessMsg(`New product '${name}' created successfully.`);
+      }
+
+      setShowModal(false);
+      loadProducts(pagination.page);
+    } catch (err) {
+      setFormError(err.message || 'Failed to save product.');
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  // Handle Deactivate / Delete
+  const handleConfirmDelete = async () => {
+    if (!productToDelete || isSupport) return;
+    setDeleting(true);
+    setError('');
+
+    try {
+      const res = await adminApi.deleteProduct(productToDelete.id);
+      setSuccessMsg(res.message || `Product '${productToDelete.name}' processed successfully.`);
+      setProductToDelete(null);
+      loadProducts(pagination.page);
+    } catch (err) {
+      setError(err.message || 'Failed to deactivate product.');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* ======================================================== */}
+      {/* ACTION & FILTER BAR                                      */}
+      {/* ======================================================== */}
+      <div className="p-4 rounded-2xl bg-[#0f0003] border border-white/10 flex flex-col sm:flex-row gap-3 items-center justify-between">
+        {/* Search */}
+        <form onSubmit={handleSearchSubmit} className="relative w-full sm:w-72">
+          <Search className="w-4 h-4 text-neutral-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search products..."
+            className="w-full bg-black/60 border border-white/10 rounded-xl pl-10 pr-3 py-2 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-[#e50914] transition-colors"
+          />
+        </form>
+
+        <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+          {/* Category Filter */}
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="bg-black/60 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#e50914] transition-colors"
+          >
+            <option value="ALL">All Categories</option>
+            <option value="Cockpit frames">Cockpit frames</option>
+            <option value="Racing seats">Racing seats</option>
+            <option value="Wheel bases">Wheel bases</option>
+            <option value="Pedals">Pedals</option>
+            <option value="Shifters">Shifters</option>
+            <option value="Handbrakes">Handbrakes</option>
+            <option value="Monitor mounts">Monitor mounts</option>
+            <option value="Keyboard trays">Keyboard trays</option>
+            <option value="Cable-management kits">Cable-management kits</option>
+            <option value="Motion systems">Motion systems</option>
+            <option value="Bundles">Bundles</option>
+          </select>
+
+          {/* Add Product Button (ADMIN only) */}
+          {!isSupport && (
+            <button
+              type="button"
+              onClick={handleOpenCreate}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#e50914] hover:bg-[#ff1801] text-white font-bold text-xs uppercase tracking-wider transition-all shadow-md shadow-[#e50914]/20"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Product</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Success Notification */}
+      {successMsg && (
+        <div className="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-center justify-between font-medium">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span>{successMsg}</span>
+          </div>
+          <button type="button" onClick={() => setSuccessMsg('')} className="text-emerald-400 hover:text-white">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Error Notification */}
+      {error && (
+        <div className="p-3.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between font-medium">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+          <button type="button" onClick={() => setError('')} className="text-rose-400 hover:text-white">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* PRODUCTS TABLE                                           */}
+      {/* ======================================================== */}
+      <div className="p-6 rounded-2xl bg-[#0f0003] border border-white/10 space-y-4">
+        {loading ? (
+          <div className="py-16 text-center text-neutral-400 flex flex-col items-center justify-center space-y-2">
+            <RefreshCw className="w-5 h-5 animate-spin text-[#e50914]" />
+            <span className="font-mono text-xs uppercase tracking-wider">Loading Catalog Products...</span>
+          </div>
+        ) : products.length === 0 ? (
+          <div className="py-16 text-center text-neutral-500 font-mono text-xs">
+            No products found matching the criteria.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-white/5 text-neutral-400 font-mono text-[10px] uppercase tracking-wider">
+                  <th className="py-3 px-3">Product</th>
+                  <th className="py-3 px-3">Category</th>
+                  <th className="py-3 px-3">Price</th>
+                  <th className="py-3 px-3">Stock</th>
+                  <th className="py-3 px-3">Availability</th>
+                  <th className="py-3 px-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {products.map((prod) => (
+                  <tr key={prod.id} className="hover:bg-white/[0.02] transition-colors">
+                    <td className="py-3.5 px-3">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={prod.imageUrl || '/hero-backdrop-hd.jpg'}
+                          alt={prod.name}
+                          className="w-10 h-10 rounded-lg object-cover bg-neutral-900 border border-white/10 shrink-0"
+                          onError={(e) => {
+                            e.target.src = '/hero-backdrop-hd.jpg';
+                          }}
+                        />
+                        <div className="min-w-0">
+                          <div className="font-bold text-white truncate max-w-xs">{prod.name}</div>
+                          <div className="font-mono text-[10px] text-neutral-400 truncate">{prod.id}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-3.5 px-3 text-neutral-300 font-mono text-[11px]">
+                      {prod.category}
+                    </td>
+                    <td className="py-3.5 px-3 font-mono font-bold text-white">
+                      {fmt(prod.priceInr || prod.price)}
+                    </td>
+                    <td className="py-3.5 px-3 font-mono">
+                      <span className={prod.stockQuantity <= 0 ? 'text-rose-400 font-bold' : prod.stockQuantity <= 5 ? 'text-amber-400 font-bold' : 'text-neutral-300'}>
+                        {prod.stockQuantity} units
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-3">
+                      {prod.isAvailable ? (
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase border bg-emerald-500/15 text-emerald-400 border-emerald-500/30">
+                          Active
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase border bg-neutral-500/15 text-neutral-400 border-neutral-500/30">
+                          Deactivated
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-3.5 px-3 text-right">
+                      {!isSupport ? (
+                        <div className="inline-flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEdit(prod)}
+                            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/15 text-neutral-300 hover:text-white transition-colors"
+                            title="Edit Product"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setProductToDelete(prod)}
+                            className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-rose-500/20 transition-colors"
+                            title="Deactivate / Delete"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-[10px] font-mono text-neutral-500">Read Only</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* ======================================================== */}
+      {/* ADD / EDIT PRODUCT MODAL                                 */}
+      {/* ======================================================== */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div onClick={() => setShowModal(false)} className="absolute inset-0 bg-black/80 backdrop-blur-md" />
+
+          <div className="relative z-10 w-full max-w-lg bg-[#0f0003] border border-white/20 rounded-3xl p-6 sm:p-8 shadow-2xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-5 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#e50914]" />
+                <h3 className="font-display font-black text-xl uppercase tracking-tight text-white">
+                  {isEditing ? `Edit Product: ${name}` : 'Add Catalog Product'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="p-1 rounded-full text-neutral-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {formError && (
+              <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs mb-4 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{formError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleFormSubmit} className="flex-1 overflow-y-auto space-y-4 pr-1">
+              {!isEditing && (
+                <div>
+                  <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                    Product Slug ID (lowercase-hyphens)
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={id}
+                    onChange={(e) => setId(e.target.value)}
+                    placeholder="e.g. active-pedal-v2"
+                    className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white font-mono placeholder-neutral-600 focus:outline-none focus:border-[#e50914]"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                  Product Name / Title
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. ActiveForce Haptic Pedal Upgrade"
+                  className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-[#e50914]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                    Category
+                  </label>
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#e50914]"
+                  >
+                    <option value="Cockpit frames">Cockpit frames</option>
+                    <option value="Racing seats">Racing seats</option>
+                    <option value="Wheel bases">Wheel bases</option>
+                    <option value="Pedals">Pedals</option>
+                    <option value="Shifters">Shifters</option>
+                    <option value="Handbrakes">Handbrakes</option>
+                    <option value="Monitor mounts">Monitor mounts</option>
+                    <option value="Keyboard trays">Keyboard trays</option>
+                    <option value="Cable-management kits">Cable-management kits</option>
+                    <option value="Motion systems">Motion systems</option>
+                    <option value="Bundles">Bundles</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                    Price (INR ₹)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="1"
+                    required
+                    value={priceInr}
+                    onChange={(e) => setPriceInr(e.target.value)}
+                    placeholder="e.g. 48999"
+                    className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white font-mono placeholder-neutral-600 focus:outline-none focus:border-[#e50914]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                    Stock Quantity
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    value={stockQuantity}
+                    onChange={(e) => setStockQuantity(e.target.value)}
+                    className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-[#e50914]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                    Catalog Availability
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setIsAvailable(!isAvailable)}
+                    className={`w-full py-2 px-3 rounded-xl border text-xs font-mono font-bold uppercase transition-all flex items-center justify-center gap-2 ${
+                      isAvailable
+                        ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
+                        : 'bg-neutral-800 border-white/10 text-neutral-400'
+                    }`}
+                  >
+                    {isAvailable ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                    <span>{isAvailable ? 'Active' : 'Disabled'}</span>
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                  Product Image URL
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                  placeholder="https://... or /hero-backdrop-hd.jpg"
+                  className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-[#e50914]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                  Specifications & Description
+                </label>
+                <textarea
+                  rows="3"
+                  value={specDescription}
+                  onChange={(e) => setSpecDescription(e.target.value)}
+                  placeholder="Technical motorsport specifications..."
+                  className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-[#e50914]"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-neutral-300 text-xs font-bold transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={formLoading}
+                  className="px-5 py-2 rounded-xl bg-[#e50914] hover:bg-[#ff1801] disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-md shadow-[#e50914]/20"
+                >
+                  {formLoading ? 'Saving...' : isEditing ? 'Save Changes' : 'Create Product'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* DEACTIVATE CONFIRMATION MODAL                            */}
+      {/* ======================================================== */}
+      {productToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div onClick={() => setProductToDelete(null)} className="absolute inset-0 bg-black/80 backdrop-blur-md" />
+
+          <div className="relative z-10 w-full max-w-md bg-[#0f0003] border border-rose-500/40 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-4">
+            <div className="flex items-center gap-2.5 text-rose-400">
+              <AlertCircle className="w-5 h-5 shrink-0" />
+              <h3 className="font-display font-black text-xl uppercase tracking-tight text-white">
+                Deactivate / Delete Product
+              </h3>
+            </div>
+
+            <p className="text-xs text-neutral-300 leading-relaxed">
+              Are you sure you want to deactivate <strong>{productToDelete.name}</strong>?
+            </p>
+            <p className="text-[11px] text-neutral-400 bg-black/40 p-3 rounded-xl border border-white/5 leading-relaxed">
+              <strong>Relational Safety Protection:</strong> If this product is referenced in historical customer orders, it will not be permanently deleted—it will be safely deactivated to preserve invoice and order records.
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setProductToDelete(null)}
+                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-neutral-300 text-xs font-bold transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={handleConfirmDelete}
+                className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider transition-all"
+              >
+                {deleting ? 'Processing...' : 'Confirm Deactivation'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+

@@ -47,3 +47,4 @@ export async function getCustomerDetails(req, res, next) {
     next(err);
   }
 }
+

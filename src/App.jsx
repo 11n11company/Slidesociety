@@ -9,9 +9,11 @@ import AccountModal from './components/AccountModal';
 import Footer from './components/Footer';
 import { products, byId } from './data/products';
 import { authApi } from './services/authApi';
+import AdminApp from './admin/AdminApp';
 
 export default function App() {
   const [currentView, setCurrentView] = useState('home');
+  const [adminMode, setAdminMode] = useState(() => window.location.pathname.startsWith('/admin'));
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [cart, setCart] = useState({ 'frame-x': 1, 'pedals-pro': 1 }); // 2 items as in mockup
   const [wishlist, setWishlist] = useState(['wheel']);
@@ -22,6 +24,15 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
+
+  // Synchronize admin routing with browser URL and history
+  useEffect(() => {
+    const handlePopState = () => {
+      setAdminMode(window.location.pathname.startsWith('/admin'));
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // Check existing session on mount
   useEffect(() => {
@@ -102,6 +113,19 @@ export default function App() {
   };
 
   const cartTotalCount = Object.values(cart).reduce((a, b) => a + b, 0);
+
+  // If URL route is under /admin, render dedicated Admin Application
+  if (adminMode) {
+    return (
+      <AdminApp
+        onExitAdmin={() => {
+          window.history.pushState(null, '', '/');
+          setAdminMode(false);
+          setCurrentView('home');
+        }}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#070707] text-[#f5f6f2] flex flex-col font-sans">

@@ -600,6 +600,32 @@ export default function AccountModal({
                 </button>
               </div>
 
+              {/* Management Console Access for ADMIN and SUPPORT */}
+              {currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'SUPPORT') && (
+                <div className="p-4 rounded-2xl bg-[#140003] border border-[#e50914]/30 flex items-center justify-between">
+                  <div>
+                    <h5 className="font-bold text-xs text-white flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-[#e50914]" />
+                      Management Console
+                    </h5>
+                    <p className="text-[11px] text-neutral-400 mt-0.5">
+                      Access the Slidescoiety Pit Wall & administration panel.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      window.history.pushState(null, '', '/admin/dashboard');
+                      window.dispatchEvent(new PopStateEvent('popstate'));
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-[#e50914] hover:bg-[#ff1801] text-white text-xs font-bold transition-colors shadow-md shadow-[#e50914]/20"
+                  >
+                    Open Console
+                  </button>
+                </div>
+              )}
+
               <div className="p-3.5 rounded-xl bg-[#e50914]/10 border border-[#e50914]/20 flex items-center gap-2.5 text-xs text-neutral-300">
                 <Sparkles className="w-4 h-4 text-[#e50914] shrink-0" />
                 <span>Cart items & custom rig setups are synchronized with your driver profile.</span>

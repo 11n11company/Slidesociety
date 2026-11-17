@@ -17,3 +17,4 @@ router.get('/', listCustomers);
 router.get('/:id', getCustomerDetails);
 
 export default router;
+
