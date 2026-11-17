@@ -14,9 +14,9 @@ export async function getInvoiceByOrder(req, res, next) {
   try {
     const { orderId } = req.params;
     const userId = req.user.id;
-    const isAdmin = req.user.role === 'ADMIN';
+    const isStaff = req.user.role === 'ADMIN' || req.user.role === 'SUPPORT';
 
-    const invoice = await fetchInvoiceByOrder({ orderId, userId, isAdmin });
+    const invoice = await fetchInvoiceByOrder({ orderId, userId, isAdmin: isStaff });
 
     return res.status(200).json({
       success: true,
@@ -45,9 +45,9 @@ export async function downloadInvoice(req, res, next) {
   try {
     const { invoiceId } = req.params;
     const userId = req.user.id;
-    const isAdmin = req.user.role === 'ADMIN';
+    const isStaff = req.user.role === 'ADMIN' || req.user.role === 'SUPPORT';
 
-    const invoice = await fetchInvoiceById(invoiceId, { userId, isAdmin });
+    const invoice = await fetchInvoiceById(invoiceId, { userId, isAdmin: isStaff });
 
     // Double check that file exists
     const filenameOrKey = invoice.storageKey || `${invoice.invoiceNumber}.pdf`;
@@ -104,9 +104,9 @@ export async function resendInvoice(req, res, next) {
   try {
     const { invoiceId } = req.params;
     const userId = req.user.id;
-    const isAdmin = req.user.role === 'ADMIN';
+    const isStaff = req.user.role === 'ADMIN' || req.user.role === 'SUPPORT';
 
-    const result = await triggerResendInvoiceEmail({ invoiceId, userId, isAdmin });
+    const result = await triggerResendInvoiceEmail({ invoiceId, userId, isAdmin: isStaff });
 
     return res.status(200).json({
       success: true,

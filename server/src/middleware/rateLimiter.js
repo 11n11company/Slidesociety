@@ -1,12 +1,13 @@
 import rateLimit from 'express-rate-limit';
+import { env } from '../config/env.js';
 
 /**
  * Strict Rate Limiter for Authentication & Account Security Endpoints
- * Limits each IP to 20 auth attempts per 15-minute window
+ * Limits each IP in production, higher ceiling in development for test suites
  */
 export const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 30, // 30 requests per window
+  max: env.NODE_ENV === 'production' ? 30 : 1000,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -20,11 +21,11 @@ export const authRateLimiter = rateLimit({
 
 /**
  * Sensitive Password Reset Request Limiter
- * Limits password reset emails to 5 requests per hour per IP
+ * Limits password reset emails
  */
 export const forgotPasswordLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 10,
+  max: env.NODE_ENV === 'production' ? 10 : 500,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
