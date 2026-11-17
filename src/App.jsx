@@ -18,6 +18,7 @@ export default function App() {
   const [cartOpen, setCartOpen] = useState(false);
   const [watchSetupOpen, setWatchSetupOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [accountInitialTab, setAccountInitialTab] = useState('profile');
   const [currentUser, setCurrentUser] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
@@ -113,7 +114,10 @@ export default function App() {
         onOpenSearch={() => {
           handleNavigate('shop');
         }}
-        onOpenAccount={() => setAccountOpen(true)}
+        onOpenAccount={() => {
+          setAccountInitialTab('profile');
+          setAccountOpen(true);
+        }}
         currentUser={currentUser}
         wishlistCount={wishlist.length}
         onOpenWishlist={() => {
@@ -219,6 +223,15 @@ export default function App() {
         onUpdateQty={handleUpdateQty}
         onClearCart={() => setCart({})}
         onShowToast={showToast}
+        currentUser={currentUser}
+        onOpenAccount={() => {
+          setAccountInitialTab('login');
+          setAccountOpen(true);
+        }}
+        onViewOrders={() => {
+          setAccountInitialTab('orders');
+          setAccountOpen(true);
+        }}
       />
 
       <WatchSetupModal
@@ -234,6 +247,7 @@ export default function App() {
         currentUser={currentUser}
         onAuthSuccess={handleAuthSuccess}
         onLogoutSuccess={handleLogoutSuccess}
+        initialTab={accountInitialTab}
       />
 
       {/* Toast Notification Pill */}

@@ -17,12 +17,18 @@ enum UserRole {
 }
 
 enum OrderStatus {
+  PENDING
   PENDING_PAYMENT
   CONFIRMED
+  PROCESSING
   FABRICATING
+  READY_TO_SHIP
   SHIPPED
+  OUT_FOR_DELIVERY
   DELIVERED
   CANCELLED
+  RETURN_REQUESTED
+  RETURNED
   REFUNDED
 }
 
@@ -152,25 +158,29 @@ model CartItem {
 }
 
 model Order {
-  id                 String               @id @default(uuid())
-  orderNumber        String               @unique // e.g. "SLIDE-2026-1001"
-  userId             String
-  shippingAddressId  String?
-  subtotal           Decimal              @db.Decimal(12, 2)
-  taxAmount          Decimal              @default(0.00) @db.Decimal(12, 2)
-  shippingAmount     Decimal              @default(0.00) @db.Decimal(12, 2)
-  totalAmount        Decimal              @db.Decimal(12, 2)
-  status             OrderStatus          @default(PENDING_PAYMENT)
-  notes              String?              @db.Text
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @updatedAt
+  id                      String               @id @default(uuid())
+  orderNumber             String               @unique // e.g. "SLIDE-2026-1001"
+  userId                  String
+  shippingAddressId       String?
+  shippingAddressSnapshot String?              @db.Text
+  subtotal                Decimal              @db.Decimal(12, 2)
+  taxAmount               Decimal              @default(0.00) @db.Decimal(12, 2)
+  shippingAmount          Decimal              @default(0.00) @db.Decimal(12, 2)
+  discountAmount          Decimal              @default(0.00) @db.Decimal(12, 2)
+  totalAmount             Decimal              @db.Decimal(12, 2)
+  currency                String               @default("INR")
+  status                  OrderStatus          @default(PENDING)
+  notes                   String?              @db.Text
+  idempotencyKey          String?              @unique
+  createdAt               DateTime             @default(now())
+  updatedAt               DateTime             @updatedAt
 
-  user               User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
-  shippingAddress    Address?             @relation(fields: [shippingAddressId], references: [id], onDelete: SetNull)
-  items              OrderItem[]
-  payments           Payment[]
-  invoice            Invoice?
-  statusHistory      OrderStatusHistory[]
+  user                    User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
+  shippingAddress         Address?             @relation(fields: [shippingAddressId], references: [id], onDelete: SetNull)
+  items                   OrderItem[]
+  payments                Payment[]
+  invoice                 Invoice?
+  statusHistory           OrderStatusHistory[]
 
   @@index([userId])
   @@index([orderNumber])
@@ -179,18 +189,20 @@ model Order {
 }
 
 model OrderItem {
-  id            String   @id @default(uuid())
-  orderId       String
-  productId     String
-  productName   String
-  unitPrice     Decimal  @db.Decimal(12, 2)
-  quantity      Int
-  lineTotal     Decimal  @db.Decimal(12, 2)
-  customRigName String?
-  createdAt     DateTime @default(now())
+  id              String   @id @default(uuid())
+  orderId         String
+  productId       String
+  productName     String
+  productCategory String?
+  productImageUrl String?  @db.Text
+  unitPrice       Decimal  @db.Decimal(12, 2)
+  quantity        Int
+  lineTotal       Decimal  @db.Decimal(12, 2)
+  customRigName   String?
+  createdAt       DateTime @default(now())
 
-  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product       Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
 
   @@index([orderId])
   @@index([productId])
