@@ -8,6 +8,7 @@ import WatchSetupModal from './components/WatchSetupModal';
 import AccountModal from './components/AccountModal';
 import Footer from './components/Footer';
 import { products, byId } from './data/products';
+import { authApi } from './services/authApi';
 
 export default function App() {
   const [currentView, setCurrentView] = useState('home');
@@ -17,14 +18,45 @@ export default function App() {
   const [cartOpen, setCartOpen] = useState(false);
   const [watchSetupOpen, setWatchSetupOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
+
+  // Check existing session on mount
+  useEffect(() => {
+    authApi.getMe().then((user) => {
+      if (user) {
+        setCurrentUser(user);
+      }
+    });
+  }, []);
 
   // Show Toast notification helper
   const showToast = (msg) => {
     setToastMessage(msg);
     setToastVisible(true);
     setTimeout(() => setToastVisible(false), 2600);
+  };
+
+  // Handle successful login or registration with guest cart preservation
+  const handleAuthSuccess = async (user) => {
+    setCurrentUser(user);
+    // Preserve & merge guest cart into customer account in PostgreSQL
+    if (cart && Object.keys(cart).length > 0) {
+      try {
+        const res = await authApi.mergeCart(cart);
+        if (res?.data?.cartMap) {
+          setCart(res.data.cartMap);
+        }
+      } catch (err) {
+        console.warn('Cart synchronization error:', err);
+      }
+    }
+  };
+
+  // Handle successful logout
+  const handleLogoutSuccess = () => {
+    setCurrentUser(null);
   };
 
   // Navigation router
@@ -82,6 +114,7 @@ export default function App() {
           handleNavigate('shop');
         }}
         onOpenAccount={() => setAccountOpen(true)}
+        currentUser={currentUser}
         wishlistCount={wishlist.length}
         onOpenWishlist={() => {
           showToast(`Your wishlist contains ${wishlist.length} item(s)`);
@@ -198,6 +231,9 @@ export default function App() {
         isOpen={accountOpen}
         onClose={() => setAccountOpen(false)}
         onShowToast={showToast}
+        currentUser={currentUser}
+        onAuthSuccess={handleAuthSuccess}
+        onLogoutSuccess={handleLogoutSuccess}
       />
 
       {/* Toast Notification Pill */}

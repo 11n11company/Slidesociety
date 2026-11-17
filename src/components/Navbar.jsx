@@ -8,6 +8,7 @@ export default function Navbar({
   onOpenCart,
   onOpenSearch,
   onOpenAccount,
+  currentUser,
   wishlistCount,
   onOpenWishlist
 }) {
@@ -184,10 +185,15 @@ export default function Navbar({
           <button
             type="button"
             onClick={onOpenAccount}
-            className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-white/20 hover:border-white/50 text-white text-xs font-medium transition-all hover:bg-white/5"
+            className={`hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs font-medium transition-all ${
+              currentUser
+                ? 'border-[#e50914]/40 bg-[#e50914]/10 text-white hover:bg-[#e50914]/20'
+                : 'border-white/20 hover:border-white/50 text-white hover:bg-white/5'
+            }`}
           >
-            <User className="w-3.5 h-3.5 text-neutral-300" />
-            <span>Account</span>
+            <User className={`w-3.5 h-3.5 ${currentUser ? 'text-[#e50914]' : 'text-neutral-300'}`} />
+            <span>{currentUser ? currentUser.fullName.split(' ')[0] : 'Account'}</span>
+            {currentUser && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 ml-0.5" />}
           </button>
 
           {/* Mobile Menu Toggle */}
@@ -244,10 +250,12 @@ export default function Navbar({
           <button
             type="button"
             onClick={() => { onOpenAccount(); setMobileOpen(false); }}
-            className="inline-flex items-center gap-2 text-white font-bold text-xs py-2 px-4 rounded-full border border-white/20 mt-2"
+            className={`inline-flex items-center gap-2 text-white font-bold text-xs py-2 px-4 rounded-full border mt-2 ${
+              currentUser ? 'border-[#e50914] bg-[#e50914]/20' : 'border-white/20'
+            }`}
           >
             <User className="w-3.5 h-3.5" />
-            <span>Driver Account</span>
+            <span>{currentUser ? currentUser.fullName : 'Driver Account'}</span>
           </button>
         </div>
       )}
