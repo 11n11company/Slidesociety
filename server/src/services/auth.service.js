@@ -348,3 +348,4 @@ export async function getUserProfile(userId) {
 
   return user;
 }
+

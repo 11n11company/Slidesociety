@@ -141,3 +141,4 @@ export async function sendPasswordResetEmail({ to, fullName, resetToken }) {
     message: 'SMTP not configured in development environment. Token logged for testing.'
   };
 }
+

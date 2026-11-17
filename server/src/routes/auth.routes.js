@@ -25,3 +25,4 @@ router.post('/reset-password', authRateLimiter, resetPassword);
 router.get('/me', authenticateCustomer, getMe);
 
 export default router;
+
