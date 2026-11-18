@@ -4,6 +4,7 @@ import {
   getOrderDetails,
   updateStatus
 } from '../controllers/adminOrder.controller.js';
+import { createShipment } from '../controllers/adminShipping.controller.js';
 import { authenticateCustomer, requireRole } from '../middleware/auth.middleware.js';
 
 const router = Router();
@@ -15,5 +16,6 @@ router.use(requireRole('ADMIN', 'SUPPORT'));
 router.get('/', listAllOrders);
 router.get('/:id', getOrderDetails);
 router.patch('/:id/status', requireRole('ADMIN'), updateStatus); // Status changes require ADMIN
+router.post('/:orderId/shipment', requireRole('ADMIN'), createShipment); // Create shipment for order requires ADMIN
 
 export default router;

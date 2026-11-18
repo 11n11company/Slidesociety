@@ -388,6 +388,7 @@ export async function getCustomerOrderById(userId, orderId) {
       },
       shippingAddress: true,
       invoice: true,
+      shipment: true,
       payments: {
         orderBy: { createdAt: 'desc' },
         select: {
@@ -573,7 +574,8 @@ export async function getAdminOrders({
         statusHistory: {
           orderBy: { createdAt: 'desc' },
           take: 1
-        }
+        },
+        shipment: true
       }
     }),
     prisma.order.count({ where })
@@ -625,7 +627,24 @@ export async function getAdminOrderById(orderId) {
         }
       },
       payments: true,
-      invoice: true
+      invoice: true,
+      shipment: {
+        include: {
+          statusHistory: {
+            orderBy: { createdAt: 'asc' },
+            include: {
+              changedByUser: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  email: true,
+                  role: true
+                }
+              }
+            }
+          }
+        }
+      }
     }
   });
 

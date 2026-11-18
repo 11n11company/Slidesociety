@@ -337,4 +337,147 @@ export async function sendAdminOrderNotification({ order, payment, invoice }) {
   };
 }
 
+/**
+ * Send Customer Shipping Notification Email
+ * Triggered on shipment lifecycle events: SHIPPED, OUT_FOR_DELIVERY, DELIVERED, DELIVERY_FAILED, RETURN_TO_SENDER
+ */
+export async function sendShippingNotificationEmail({ to, customerName, order, shipment, eventType, notes, failureReason }) {
+  if (!to) {
+    logger.warn('Skipping shipping notification: No recipient email address provided.');
+    return { sent: false, error: 'NO_RECIPIENT' };
+  }
+
+  let subject = `Slidescoiety Shipping Update — Order ${order.orderNumber}`;
+  let headline = 'Shipment Status Update';
+  let badgeColor = '#3b82f6';
+  let statusText = shipment.status.replace(/_/g, ' ');
+
+  switch (eventType) {
+    case 'SHIPPED':
+      subject = `Dispatched: Slidescoiety Order [${order.orderNumber}] is on the way`;
+      headline = 'Hardware In Motion: Your Rig Has Dispatched';
+      badgeColor = '#06b6d4';
+      statusText = 'DISPATCHED';
+      break;
+    case 'OUT_FOR_DELIVERY':
+      subject = `Out for Delivery: Slidescoiety Order [${order.orderNumber}]`;
+      headline = 'Approaching Final Sector: Out for Delivery Today';
+      badgeColor = '#0284c7';
+      statusText = 'OUT FOR DELIVERY';
+      break;
+    case 'DELIVERED':
+      subject = `Delivered: Slidescoiety Order [${order.orderNumber}]`;
+      headline = 'P1 Finish: Hardware Successfully Delivered';
+      badgeColor = '#10b981';
+      statusText = 'DELIVERED';
+      break;
+    case 'DELIVERY_FAILED':
+      subject = `Delivery Exception Notice: Slidescoiety Order [${order.orderNumber}]`;
+      headline = 'Delivery Attempt Exception';
+      badgeColor = '#e11d48';
+      statusText = 'DELIVERY FAILED';
+      break;
+    case 'RETURN_TO_SENDER':
+      subject = `Shipment Return Notice: Slidescoiety Order [${order.orderNumber}]`;
+      headline = 'Shipment Returning to Depot';
+      badgeColor = '#f59e0b';
+      statusText = 'RETURN TO SENDER';
+      break;
+  }
+
+  const trackingLinkHtml = shipment.trackingUrl
+    ? `<a href="${shipment.trackingUrl}" target="_blank" rel="noopener noreferrer" style="color: #e50914; font-weight: bold; text-decoration: underline;">${shipment.trackingNumber}</a>`
+    : `<span style="color: #ffffff; font-family: monospace; font-weight: bold;">${shipment.trackingNumber}</span>`;
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; background-color: #080002; color: #f5f6f2; padding: 40px; border-radius: 12px; max-width: 600px; margin: auto;">
+      <h1 style="color: #e50914; margin-bottom: 4px; text-transform: uppercase; font-size: 24px; letter-spacing: 1px;">SLIDESCOIETY</h1>
+      <p style="font-size: 13px; color: #a3a3a3; margin-top: 0; text-transform: uppercase; letter-spacing: 2px;">PREMIUM SIM RACING STORE</p>
+      <hr style="border: none; border-top: 1px solid #262626; margin: 20px 0;" />
+      
+      <div style="display: inline-block; padding: 4px 10px; border-radius: 4px; background-color: ${badgeColor}22; border: 1px solid ${badgeColor}; color: ${badgeColor}; font-size: 11px; font-weight: bold; text-transform: uppercase; margin-bottom: 16px;">
+        ${statusText}
+      </div>
+
+      <h2 style="color: #ffffff; margin-top: 0; font-size: 20px;">${headline}</h2>
+      <p style="color: #d4d4d4; font-size: 14px; line-height: 1.6;">
+        Hello <strong>${customerName || 'Driver'}</strong>, here is the latest logistics update for your Slidescoiety order <strong>${order.orderNumber}</strong>.
+      </p>
+
+      <div style="background-color: #121212; border: 1px solid #262626; border-radius: 8px; padding: 20px; margin: 24px 0;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+          <tr>
+            <td style="padding: 6px 0; color: #888888; width: 140px;">Order Number:</td>
+            <td style="padding: 6px 0; font-weight: bold; color: #ffffff;">${order.orderNumber}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #888888;">Courier Partner:</td>
+            <td style="padding: 6px 0; font-weight: bold; color: #ffffff;">${shipment.courierName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #888888;">Tracking Reference:</td>
+            <td style="padding: 6px 0;">${trackingLinkHtml}</td>
+          </tr>
+          ${shipment.estimatedDeliveryAt ? `
+          <tr>
+            <td style="padding: 6px 0; color: #888888;">Estimated Delivery:</td>
+            <td style="padding: 6px 0; color: #ffffff;">${new Date(shipment.estimatedDeliveryAt).toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</td>
+          </tr>` : ''}
+          ${failureReason ? `
+          <tr>
+            <td style="padding: 6px 0; color: #ef4444;">Exception Reason:</td>
+            <td style="padding: 6px 0; color: #fca5a5; font-weight: bold;">${failureReason}</td>
+          </tr>` : ''}
+          ${notes ? `
+          <tr>
+            <td style="padding: 6px 0; color: #888888;">Dispatcher Notes:</td>
+            <td style="padding: 6px 0; color: #d4d4d4; font-style: italic;">"${notes}"</td>
+          </tr>` : ''}
+        </table>
+      </div>
+
+      ${shipment.trackingUrl ? `
+      <div style="text-align: center; margin: 28px 0;">
+        <a href="${shipment.trackingUrl}" target="_blank" rel="noopener noreferrer" style="background-color: #e50914; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 9999px; font-weight: bold; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block;">
+          Track Live Consignment
+        </a>
+      </div>` : ''}
+
+      <hr style="border: none; border-top: 1px solid #262626; margin: 24px 0;" />
+      <p style="color: #737373; font-size: 12px; line-height: 1.5;">
+        Need assistance with your delivery? Contact our pit crew at
+        <a href="mailto:${env.SELLER_EMAIL}" style="color: #e50914; text-decoration: none;">${env.SELLER_EMAIL}</a>.
+      </p>
+      <p style="color: #525252; font-size: 11px; margin-top: 12px;">
+        Slidescoiety Sim Racing Store &bull; Professional Cockpits &bull; Build / Race / Upgrade
+      </p>
+    </div>
+  `;
+
+  if (transporter) {
+    try {
+      await transporter.sendMail({
+        from: env.EMAIL_FROM,
+        to,
+        subject,
+        html
+      });
+      logger.info(`Shipping notification [${eventType}] delivered via SMTP to [${to}] for Order [${order.orderNumber}]`);
+      return { sent: true, provider: 'smtp' };
+    } catch (err) {
+      logger.error(`SMTP delivery of shipping notification to [${to}] failed: ${err.message}`);
+      return { sent: false, error: err.message };
+    }
+  }
+
+  // Development simulation: log notification clearly
+  logger.info(`[DEV-EMAIL] Simulated customer shipping notification [${eventType}] for [${to}], Order [${order.orderNumber}], Tracking: [${shipment.trackingNumber}]`);
+  return {
+    sent: false,
+    simulated: true,
+    message: 'SMTP not configured in development environment. Shipping notification simulated.'
+  };
+}
+
+
 

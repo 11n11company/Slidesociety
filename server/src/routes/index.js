@@ -8,6 +8,7 @@ import adminOrderRoutes from './adminOrder.routes.js';
 import adminProductRoutes from './adminProduct.routes.js';
 import adminInventoryRoutes from './adminInventory.routes.js';
 import adminCustomerRoutes from './adminCustomer.routes.js';
+import adminShippingRoutes from './adminShipping.routes.js';
 import paymentRoutes from './payment.routes.js';
 import invoiceRoutes from './invoice.routes.js';
 import { getOverview } from '../controllers/adminOverview.controller.js';
@@ -53,6 +54,9 @@ router.use('/v1/admin/inventory', adminInventoryRoutes);
 
 // /api/v1/admin/customers (Admin Customer Management)
 router.use('/v1/admin/customers', adminCustomerRoutes);
+
+// /api/v1/admin/shipments (Admin Shipping & Logistics Management)
+router.use('/v1/admin/shipments', adminShippingRoutes);
 
 // /api/v1/categories (direct alias)
 router.get('/v1/categories', getCategories);

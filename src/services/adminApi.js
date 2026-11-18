@@ -295,5 +295,104 @@ export const adminApi = {
    */
   async resendInvoice(invoiceId) {
     return invoiceApi.resendInvoice(invoiceId);
+  },
+
+  /**
+   * List shipments with search, filtering and pagination
+   * GET /api/v1/admin/shipments
+   */
+  async getShipments({
+    page = 1,
+    limit = 20,
+    status = '',
+    courier = '',
+    search = '',
+    startDate = '',
+    endDate = '',
+    sort = 'newest'
+  } = {}) {
+    const params = new URLSearchParams();
+    if (page) params.append('page', page);
+    if (limit) params.append('limit', limit);
+    if (status && status !== 'ALL') params.append('status', status);
+    if (courier && courier !== 'ALL') params.append('courier', courier);
+    if (search && search.trim()) params.append('search', search.trim());
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    if (sort) params.append('sort', sort);
+
+    const qs = params.toString();
+    const url = `${ADMIN_BASE}/shipments${qs ? `?${qs}` : ''}`;
+
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' },
+      credentials: 'include'
+    });
+    return handleResponse(res);
+  },
+
+  /**
+   * Get single shipment details
+   * GET /api/v1/admin/shipments/:id
+   */
+  async getShipmentById(shipmentId) {
+    const res = await fetch(`${ADMIN_BASE}/shipments/${shipmentId}`, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' },
+      credentials: 'include'
+    });
+    return handleResponse(res);
+  },
+
+  /**
+   * Create shipment for an order
+   * POST /api/v1/admin/orders/:orderId/shipment
+   */
+  async createShipment(orderId, shipmentData) {
+    const res = await fetch(`${ADMIN_BASE}/orders/${orderId}/shipment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      credentials: 'include',
+      body: JSON.stringify(shipmentData)
+    });
+    return handleResponse(res);
+  },
+
+  /**
+   * Update shipment metadata (courier, tracking, dates, notes)
+   * PATCH /api/v1/admin/shipments/:id
+   */
+  async updateShipment(shipmentId, shipmentData) {
+    const res = await fetch(`${ADMIN_BASE}/shipments/${shipmentId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      credentials: 'include',
+      body: JSON.stringify(shipmentData)
+    });
+    return handleResponse(res);
+  },
+
+  /**
+   * Transition shipment status
+   * PATCH /api/v1/admin/shipments/:id/status
+   */
+  async updateShipmentStatus(shipmentId, { status, notes, failureReason }) {
+    const res = await fetch(`${ADMIN_BASE}/shipments/${shipmentId}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      credentials: 'include',
+      body: JSON.stringify({ status, notes, failureReason })
+    });
+    return handleResponse(res);
   }
 };

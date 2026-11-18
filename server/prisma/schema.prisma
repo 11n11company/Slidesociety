@@ -50,6 +50,16 @@ enum ReservationStatus {
   EXPIRED
 }
 
+enum ShipmentStatus {
+  READY_FOR_DISPATCH
+  SHIPPED
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  DELIVERY_FAILED
+  RETURN_TO_SENDER
+}
+
 model User {
   id                  String               @id @default(uuid())
   email               String               @unique
@@ -72,6 +82,7 @@ model User {
   carts               Cart[]
   notifications       Notification[]
   statusChanges       OrderStatusHistory[]
+  shipmentStatusChanges ShipmentStatusHistory[]
 
   @@index([email])
   @@index([role])
@@ -195,6 +206,7 @@ model Order {
   invoice                 Invoice?
   statusHistory           OrderStatusHistory[]
   reservations            StockReservation[]
+  shipment                Shipment?
 
   @@index([userId])
   @@index([orderNumber])
@@ -347,5 +359,45 @@ model StockReservation {
   @@index([status])
   @@index([expiresAt])
 }
+
+model Shipment {
+  id                  String                  @id @default(uuid())
+  orderId             String                  @unique // Strictly one shipment per order
+  courierName         String
+  trackingNumber      String
+  trackingUrl         String?                 @db.Text
+  status              ShipmentStatus          @default(READY_FOR_DISPATCH)
+  dispatchedAt        DateTime?
+  estimatedDeliveryAt DateTime?
+  deliveredAt         DateTime?
+  failureReason       String?                 @db.Text
+  notes               String?                 @db.Text
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+
+  order               Order                   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  statusHistory       ShipmentStatusHistory[]
+
+  @@index([orderId])
+  @@index([trackingNumber])
+  @@index([status])
+}
+
+model ShipmentStatusHistory {
+  id              String          @id @default(uuid())
+  shipmentId      String
+  previousStatus  ShipmentStatus?
+  newStatus       ShipmentStatus
+  changedByUserId String?
+  notes           String?         @db.Text
+  createdAt       DateTime        @default(now())
+
+  shipment        Shipment        @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  changedByUser   User?           @relation(fields: [changedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([shipmentId])
+  @@index([newStatus])
+}
+
 
 

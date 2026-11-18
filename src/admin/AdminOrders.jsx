@@ -32,6 +32,37 @@ const ALLOWED_STATUS_TRANSITIONS = {
   CANCELLED: []
 };
 
+const ALLOWED_SHIPMENT_TRANSITIONS = {
+  READY_FOR_DISPATCH: ['SHIPPED'],
+  SHIPPED: ['IN_TRANSIT', 'OUT_FOR_DELIVERY', 'DELIVERED', 'DELIVERY_FAILED', 'RETURN_TO_SENDER'],
+  IN_TRANSIT: ['OUT_FOR_DELIVERY', 'DELIVERED', 'DELIVERY_FAILED', 'RETURN_TO_SENDER'],
+  OUT_FOR_DELIVERY: ['DELIVERED', 'DELIVERY_FAILED', 'RETURN_TO_SENDER'],
+  DELIVERY_FAILED: ['OUT_FOR_DELIVERY', 'IN_TRANSIT', 'RETURN_TO_SENDER', 'DELIVERED'],
+  RETURN_TO_SENDER: [],
+  DELIVERED: []
+};
+
+const getShipmentStatusBadge = (status) => {
+  switch (status) {
+    case 'READY_FOR_DISPATCH':
+      return 'bg-amber-500/15 border-amber-500/30 text-amber-400';
+    case 'SHIPPED':
+      return 'bg-cyan-500/15 border-cyan-500/30 text-cyan-400';
+    case 'IN_TRANSIT':
+      return 'bg-blue-500/15 border-blue-500/30 text-blue-400';
+    case 'OUT_FOR_DELIVERY':
+      return 'bg-sky-500/15 border-sky-500/30 text-sky-400';
+    case 'DELIVERED':
+      return 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400';
+    case 'DELIVERY_FAILED':
+      return 'bg-rose-500/15 border-rose-500/30 text-rose-400';
+    case 'RETURN_TO_SENDER':
+      return 'bg-purple-500/15 border-purple-500/30 text-purple-400';
+    default:
+      return 'bg-neutral-500/15 border-neutral-500/30 text-neutral-400';
+  }
+};
+
 export default function AdminOrders({ currentUser, initialOrderId = null }) {
   const [orders, setOrders] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 15, totalCount: 0, totalPages: 1 });
@@ -54,6 +85,21 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [statusSuccess, setStatusSuccess] = useState('');
   const [downloadingInvoice, setDownloadingInvoice] = useState(false);
+
+  // Shipment Management State
+  const [showCreateShipment, setShowCreateShipment] = useState(false);
+  const [shipmentCourier, setShipmentCourier] = useState('');
+  const [shipmentTrackingNumber, setShipmentTrackingNumber] = useState('');
+  const [shipmentTrackingUrl, setShipmentTrackingUrl] = useState('');
+  const [shipmentEstDelivery, setShipmentEstDelivery] = useState('');
+  const [shipmentNotes, setShipmentNotes] = useState('');
+  const [creatingShipment, setCreatingShipment] = useState(false);
+  const [shipmentError, setShipmentError] = useState('');
+  const [shipmentSuccess, setShipmentSuccess] = useState('');
+  const [newShipmentStatus, setNewShipmentStatus] = useState('');
+  const [shipmentStatusNotes, setShipmentStatusNotes] = useState('');
+  const [shipmentFailureReason, setShipmentFailureReason] = useState('');
+  const [updatingShipmentStatus, setUpdatingShipmentStatus] = useState(false);
 
   const isSupport = currentUser?.role === 'SUPPORT';
 
@@ -93,6 +139,17 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
     setStatusSuccess('');
     setNewStatus('');
     setStatusNotes('');
+    setShipmentError('');
+    setShipmentSuccess('');
+    setShowCreateShipment(false);
+    setShipmentCourier('');
+    setShipmentTrackingNumber('');
+    setShipmentTrackingUrl('');
+    setShipmentEstDelivery('');
+    setShipmentNotes('');
+    setNewShipmentStatus('');
+    setShipmentStatusNotes('');
+    setShipmentFailureReason('');
 
     try {
       const res = await adminApi.getOrderById(orderId);
@@ -109,6 +166,64 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
       handleOpenDetail(initialOrderId);
     }
   }, [initialOrderId]);
+
+  // Handle Shipment Creation
+  const handleCreateShipment = async (e) => {
+    e.preventDefault();
+    if (!selectedOrder) return;
+    setCreatingShipment(true);
+    setShipmentError('');
+    setShipmentSuccess('');
+
+    try {
+      await adminApi.createShipment(selectedOrder.id, {
+        courierName: shipmentCourier.trim(),
+        trackingNumber: shipmentTrackingNumber.trim(),
+        trackingUrl: shipmentTrackingUrl.trim() || undefined,
+        estimatedDeliveryAt: shipmentEstDelivery ? new Date(shipmentEstDelivery).toISOString() : undefined,
+        notes: shipmentNotes.trim() || undefined
+      });
+      setShipmentSuccess(`Shipment created with ${shipmentCourier} (${shipmentTrackingNumber}).`);
+      setShowCreateShipment(false);
+      // Reload order details to show new shipment
+      const refreshed = await adminApi.getOrderById(selectedOrder.id);
+      setSelectedOrder(refreshed?.data?.order || selectedOrder);
+      loadOrders(pagination.page);
+    } catch (err) {
+      setShipmentError(err.message || 'Failed to create shipment.');
+    } finally {
+      setCreatingShipment(false);
+    }
+  };
+
+  // Handle Shipment Status Update
+  const handleUpdateShipmentStatus = async (e) => {
+    e.preventDefault();
+    if (!selectedOrder?.shipment || !newShipmentStatus) return;
+    setUpdatingShipmentStatus(true);
+    setShipmentError('');
+    setShipmentSuccess('');
+
+    try {
+      await adminApi.updateShipmentStatus(selectedOrder.shipment.id, {
+        status: newShipmentStatus,
+        notes: shipmentStatusNotes.trim() || undefined,
+        failureReason: newShipmentStatus === 'DELIVERY_FAILED' ? (shipmentFailureReason.trim() || shipmentStatusNotes.trim() || undefined) : undefined
+      });
+      setShipmentSuccess(`Shipment status updated to ${newShipmentStatus}.`);
+      setNewShipmentStatus('');
+      setShipmentStatusNotes('');
+      setShipmentFailureReason('');
+      // Reload order details to refresh both shipment and order status
+      const refreshed = await adminApi.getOrderById(selectedOrder.id);
+      setSelectedOrder(refreshed?.data?.order || selectedOrder);
+      loadOrders(pagination.page);
+    } catch (err) {
+      setShipmentError(err.message || 'Failed to update shipment status.');
+    } finally {
+      setUpdatingShipmentStatus(false);
+    }
+  };
 
   // Handle Order Status Update
   const handleUpdateStatus = async (e) => {
@@ -487,6 +602,289 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                         <Download className="w-3.5 h-3.5" />
                         <span>{downloadingInvoice ? 'Downloading...' : 'PDF Invoice'}</span>
                       </button>
+                    )}
+                  </div>
+
+                  {/* Shipment & Logistics Management Card */}
+                  <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Truck className="w-4 h-4 text-[#e50914]" />
+                        <span className="text-[10px] font-mono uppercase text-[#e50914] font-bold tracking-wider">
+                          Shipment &amp; Logistics Management
+                        </span>
+                      </div>
+                      {selectedOrder.shipment && (
+                        <span className={`px-2.5 py-0.5 rounded text-[10px] font-mono font-bold uppercase border ${getShipmentStatusBadge(selectedOrder.shipment.status)}`}>
+                          {selectedOrder.shipment.status.replace(/_/g, ' ')}
+                        </span>
+                      )}
+                    </div>
+
+                    {shipmentSuccess && (
+                      <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2 font-medium">
+                        <CheckCircle2 className="w-4 h-4 shrink-0" />
+                        <span>{shipmentSuccess}</span>
+                      </div>
+                    )}
+
+                    {shipmentError && (
+                      <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2 font-medium">
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                        <span>{shipmentError}</span>
+                      </div>
+                    )}
+
+                    {selectedOrder.shipment ? (
+                      <div className="space-y-3">
+                        {/* Shipment metadata display */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs bg-black/30 p-3 rounded-xl border border-white/5 font-mono">
+                          <div>
+                            <span className="text-neutral-500 block text-[10px] uppercase">Courier Partner</span>
+                            <span className="font-bold text-white">{selectedOrder.shipment.courierName}</span>
+                          </div>
+                          <div>
+                            <span className="text-neutral-500 block text-[10px] uppercase">Tracking Consignment</span>
+                            {selectedOrder.shipment.trackingUrl ? (
+                              <a
+                                href={selectedOrder.shipment.trackingUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[#e50914] font-bold hover:underline"
+                              >
+                                {selectedOrder.shipment.trackingNumber} ↗
+                              </a>
+                            ) : (
+                              <span className="font-bold text-white">{selectedOrder.shipment.trackingNumber}</span>
+                            )}
+                          </div>
+                          <div>
+                            <span className="text-neutral-500 block text-[10px] uppercase">Est. Delivery</span>
+                            <span className="text-neutral-300">
+                              {selectedOrder.shipment.estimatedDeliveryAt
+                                ? new Date(selectedOrder.shipment.estimatedDeliveryAt).toLocaleDateString()
+                                : 'Not specified'}
+                            </span>
+                          </div>
+                          {selectedOrder.shipment.dispatchedAt && (
+                            <div>
+                              <span className="text-neutral-500 block text-[10px] uppercase">Dispatched At</span>
+                              <span className="text-cyan-400">
+                                {new Date(selectedOrder.shipment.dispatchedAt).toLocaleString()}
+                              </span>
+                            </div>
+                          )}
+                          {selectedOrder.shipment.deliveredAt && (
+                            <div>
+                              <span className="text-neutral-500 block text-[10px] uppercase">Delivered At</span>
+                              <span className="text-emerald-400">
+                                {new Date(selectedOrder.shipment.deliveredAt).toLocaleString()}
+                              </span>
+                            </div>
+                          )}
+                          {selectedOrder.shipment.failureReason && (
+                            <div className="sm:col-span-2">
+                              <span className="text-rose-400 block text-[10px] uppercase font-bold">Failure Reason</span>
+                              <span className="text-rose-300">{selectedOrder.shipment.failureReason}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {selectedOrder.shipment.notes && (
+                          <div className="text-xs text-neutral-400 italic bg-black/20 p-2.5 rounded-lg border border-white/5">
+                            Dispatcher Notes: "{selectedOrder.shipment.notes}"
+                          </div>
+                        )}
+
+                        {/* Shipment Status Transition Controls (ADMIN only) */}
+                        {!isSupport && ALLOWED_SHIPMENT_TRANSITIONS[selectedOrder.shipment.status]?.length > 0 && (
+                          <form onSubmit={handleUpdateShipmentStatus} className="pt-2 space-y-2 border-t border-white/5">
+                            <div className="text-[10px] font-mono uppercase text-neutral-400 font-bold">
+                              Advance Logistics Status
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              <div>
+                                <select
+                                  value={newShipmentStatus}
+                                  onChange={(e) => setNewShipmentStatus(e.target.value)}
+                                  className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#e50914]"
+                                  required
+                                >
+                                  <option value="">Select Next Status</option>
+                                  {ALLOWED_SHIPMENT_TRANSITIONS[selectedOrder.shipment.status].map((st) => (
+                                    <option key={st} value={st}>
+                                      {st.replace(/_/g, ' ')}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div>
+                                <input
+                                  type="text"
+                                  value={shipmentStatusNotes}
+                                  onChange={(e) => setShipmentStatusNotes(e.target.value)}
+                                  placeholder="Status notes or hub location..."
+                                  className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-1.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-[#e50914]"
+                                />
+                              </div>
+                            </div>
+                            {newShipmentStatus === 'DELIVERY_FAILED' && (
+                              <div>
+                                <input
+                                  type="text"
+                                  value={shipmentFailureReason}
+                                  onChange={(e) => setShipmentFailureReason(e.target.value)}
+                                  placeholder="Reason for delivery failure (e.g. consignee unavailable, address incomplete)..."
+                                  className="w-full bg-black/60 border border-rose-500/50 rounded-xl px-3 py-1.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-rose-500"
+                                  required
+                                />
+                              </div>
+                            )}
+                            <button
+                              type="submit"
+                              disabled={updatingShipmentStatus || !newShipmentStatus}
+                              className="px-4 py-1.5 rounded-lg bg-[#e50914] hover:bg-[#ff1801] disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider transition-all"
+                            >
+                              {updatingShipmentStatus ? 'Updating...' : 'Update Shipment Status'}
+                            </button>
+                          </form>
+                        )}
+
+                        {/* Shipment Status History Trail */}
+                        {selectedOrder.shipment.statusHistory?.length > 0 && (
+                          <div className="pt-2 border-t border-white/5 space-y-1.5">
+                            <div className="text-[10px] font-mono uppercase text-neutral-500">Logistics History Trail</div>
+                            <div className="space-y-1 max-h-36 overflow-y-auto pr-1">
+                              {selectedOrder.shipment.statusHistory.map((h) => (
+                                <div key={h.id} className="p-2 rounded-lg bg-black/20 border border-white/5 flex items-center justify-between text-[11px]">
+                                  <div className="flex items-center gap-2">
+                                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase border ${getShipmentStatusBadge(h.newStatus)}`}>
+                                      {h.previousStatus ? `${h.previousStatus} → ${h.newStatus}` : h.newStatus}
+                                    </span>
+                                    {h.notes && <span className="text-neutral-400 italic">"{h.notes}"</span>}
+                                  </div>
+                                  <span className="text-[10px] font-mono text-neutral-500 shrink-0">
+                                    {new Date(h.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div>
+                        {/* Prepare Shipment Form or Notice */}
+                        {selectedOrder.status === 'CANCELLED' ? (
+                          <div className="text-xs text-neutral-500 font-mono">
+                            Order is cancelled. Consignments cannot be dispatched for cancelled orders.
+                          </div>
+                        ) : selectedOrder.payments?.some(p => p.status === 'CAPTURED') ? (
+                          !isSupport && (
+                            <div>
+                              {!showCreateShipment ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setShowCreateShipment(true)}
+                                  className="px-4 py-2 rounded-xl bg-white/10 hover:bg-[#e50914] text-white text-xs font-bold transition-all flex items-center gap-2 uppercase tracking-wider"
+                                >
+                                  <Truck className="w-3.5 h-3.5" />
+                                  <span>Prepare &amp; Assign Shipment</span>
+                                </button>
+                              ) : (
+                                <form onSubmit={handleCreateShipment} className="p-3.5 rounded-xl bg-black/30 border border-white/10 space-y-3">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-white uppercase tracking-wider">
+                                      New Consignment Details
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => setShowCreateShipment(false)}
+                                      className="text-neutral-400 hover:text-white text-xs"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                                    <div>
+                                      <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                                        Courier Partner *
+                                      </label>
+                                      <input
+                                        type="text"
+                                        value={shipmentCourier}
+                                        onChange={(e) => setShipmentCourier(e.target.value)}
+                                        placeholder="e.g. BlueDart Express, Delhivery, DHL"
+                                        className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#e50914]"
+                                        required
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                                        Tracking / AWB Number *
+                                      </label>
+                                      <input
+                                        type="text"
+                                        value={shipmentTrackingNumber}
+                                        onChange={(e) => setShipmentTrackingNumber(e.target.value)}
+                                        placeholder="e.g. BD948201847IN"
+                                        className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#e50914]"
+                                        required
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                                        Tracking Link / URL (Optional)
+                                      </label>
+                                      <input
+                                        type="url"
+                                        value={shipmentTrackingUrl}
+                                        onChange={(e) => setShipmentTrackingUrl(e.target.value)}
+                                        placeholder="https://track.courier.com/BD948201847IN"
+                                        className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#e50914]"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                                        Estimated Delivery Date (Optional)
+                                      </label>
+                                      <input
+                                        type="date"
+                                        value={shipmentEstDelivery}
+                                        onChange={(e) => setShipmentEstDelivery(e.target.value)}
+                                        className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#e50914]"
+                                      />
+                                    </div>
+                                    <div className="sm:col-span-2">
+                                      <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                                        Dispatcher Notes (Optional)
+                                      </label>
+                                      <input
+                                        type="text"
+                                        value={shipmentNotes}
+                                        onChange={(e) => setShipmentNotes(e.target.value)}
+                                        placeholder="e.g. Heavy freight, 3 boxes, fragile aluminum chassis"
+                                        className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#e50914]"
+                                      />
+                                    </div>
+                                  </div>
+                                  <button
+                                    type="submit"
+                                    disabled={creatingShipment || !shipmentCourier || !shipmentTrackingNumber}
+                                    className="px-4 py-2 rounded-xl bg-[#e50914] hover:bg-[#ff1801] disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider transition-all"
+                                  >
+                                    {creatingShipment ? 'Saving Consignment...' : 'Assign Consignment & Ready for Dispatch'}
+                                  </button>
+                                </form>
+                              )}
+                            </div>
+                          )
+                        ) : (
+                          <div className="text-xs text-neutral-500 font-mono">
+                            Order requires verified captured payment before consignment dispatch can be prepared.
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
 
