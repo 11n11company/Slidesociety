@@ -12,7 +12,7 @@ const router = Router();
 // Rate limiter for invoice email resending
 const resendLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // max 10 requests per window
+  max: process.env.NODE_ENV === 'production' ? 10 : 1000, // relaxed in test/development
   standardHeaders: true,
   legacyHeaders: false,
   message: {

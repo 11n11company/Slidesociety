@@ -93,5 +93,20 @@ export const orderApi = {
       body: JSON.stringify({ reason })
     });
     return handleResponse(res);
+  },
+
+  /**
+   * Retrieve tracking details and consignment timeline for a customer order
+   * GET /api/v1/orders/:orderId/tracking
+   */
+  async getOrderTracking(orderId) {
+    const res = await fetch(`${API_BASE}/${orderId}/tracking`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json'
+      },
+      credentials: 'include'
+    });
+    return handleResponse(res);
   }
 };

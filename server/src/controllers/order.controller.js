@@ -5,6 +5,7 @@ import {
   cancelCustomerOrder,
   cancelOrderSchema
 } from '../services/order.service.js';
+import { getCustomerOrderTracking } from '../services/shipping.service.js';
 
 /**
  * Customer Order Creation
@@ -157,3 +158,30 @@ export async function cancelOrder(req, res, next) {
     next(err);
   }
 }
+
+/**
+ * Customer: Retrieve tracking details for order
+ * GET /api/v1/orders/:id/tracking
+ */
+export async function getOrderTracking(req, res, next) {
+  try {
+    const tracking = await getCustomerOrderTracking(req.user.id, req.params.id);
+
+    return res.status(200).json({
+      success: true,
+      data: tracking
+    });
+  } catch (err) {
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({
+        success: false,
+        error: {
+          code: err.code || 'NOT_FOUND',
+          message: err.message
+        }
+      });
+    }
+    next(err);
+  }
+}
+

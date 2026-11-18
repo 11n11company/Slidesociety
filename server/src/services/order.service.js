@@ -250,10 +250,17 @@ export async function createCustomerOrder(userId, input) {
   // 6. Prisma Database Transaction (Stock reservation + Order creation + cart clearance)
   // If anything fails, transaction rolls back automatically and cart is 100% preserved!
   const createdOrder = await prisma.$transaction(async (tx) => {
-    // 6a. Generate Unique Sequential Order Number atomically from PostgreSQL sequence
+    // 6a. Lock products deterministically FOR UPDATE to guarantee ACID serialization
+    // and prevent PostgreSQL foreign-key deadlock with concurrent OrderItem inserts
+    const sortedProductIds = [...new Set(orderItemsData.map(i => i.productId))].sort();
+    for (const prodId of sortedProductIds) {
+      await tx.$queryRaw`SELECT id FROM "Product" WHERE id = ${prodId} FOR UPDATE`;
+    }
+
+    // 6b. Generate Unique Sequential Order Number atomically from PostgreSQL sequence
     const orderNumber = await generateOrderNumber(tx);
 
-    // 6b. Create Order Record
+    // 6c. Create Order Record
     const order = await tx.order.create({
       data: {
         orderNumber,

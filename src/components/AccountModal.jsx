@@ -23,7 +23,9 @@ import {
   CreditCard,
   RotateCcw,
   Download,
-  Send
+  Send,
+  Truck,
+  ExternalLink
 } from 'lucide-react';
 import { authApi } from '../services/authApi';
 import { orderApi } from '../services/orderApi';
@@ -63,6 +65,11 @@ export default function AccountModal({
   const [resendingInvoice, setResendingInvoice] = useState(false);
   const [invoiceMessage, setInvoiceMessage] = useState('');
 
+  // Tracking State
+  const [trackingData, setTrackingData] = useState(null);
+  const [trackingLoading, setTrackingLoading] = useState(false);
+  const [trackingError, setTrackingError] = useState('');
+
   // Status Badge Mapper
   const getStatusBadge = (status) => {
     switch (status) {
@@ -87,6 +94,83 @@ export default function AccountModal({
       default:
         return { bg: 'bg-neutral-500/15', text: 'text-neutral-400', border: 'border-neutral-500/30', label: status };
     }
+  };
+
+  const getShipmentStatusBadge = (status) => {
+    switch (status) {
+      case 'READY_FOR_DISPATCH':
+        return 'bg-amber-500/15 border-amber-500/30 text-amber-400';
+      case 'SHIPPED':
+        return 'bg-cyan-500/15 border-cyan-500/30 text-cyan-400';
+      case 'IN_TRANSIT':
+        return 'bg-blue-500/15 border-blue-500/30 text-blue-400';
+      case 'OUT_FOR_DELIVERY':
+        return 'bg-sky-500/15 border-sky-500/30 text-sky-400';
+      case 'DELIVERED':
+        return 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400';
+      case 'DELIVERY_FAILED':
+        return 'bg-rose-500/15 border-rose-500/30 text-rose-400';
+      case 'RETURN_TO_SENDER':
+        return 'bg-purple-500/15 border-purple-500/30 text-purple-400';
+      default:
+        return 'bg-neutral-500/15 border-neutral-500/30 text-neutral-400';
+    }
+  };
+
+  const getTimelineStages = (data) => {
+    if (!data?.hasShipment) return [];
+    const status = data.shipment.status;
+    const history = data.timeline || [];
+
+    const historyMap = {};
+    for (const h of history) {
+      historyMap[h.stage] = h.timestamp;
+    }
+
+    const standardStages = [
+      { key: 'READY_FOR_DISPATCH', label: 'Ready for Dispatch', desc: 'Consignment packaged and labeled for carrier handover' },
+      { key: 'SHIPPED', label: 'Dispatched', desc: 'Consignment handed over to courier partner' },
+      { key: 'IN_TRANSIT', label: 'In Transit', desc: 'Consignment in motion between logistics hubs' },
+      { key: 'OUT_FOR_DELIVERY', label: 'Out for Delivery', desc: 'Consignment on van for final destination delivery' },
+      { key: 'DELIVERED', label: 'Delivered', desc: 'Consignment successfully delivered to customer' }
+    ];
+
+    const stageOrder = ['READY_FOR_DISPATCH', 'SHIPPED', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'DELIVERED'];
+    const currentIndex = stageOrder.indexOf(status);
+
+    const stages = standardStages.map((s, idx) => {
+      const historicalTime = historyMap[s.key] || (s.key === 'SHIPPED' ? data.shipment.dispatchedAt : s.key === 'DELIVERED' ? data.shipment.deliveredAt : null);
+      const isDone = (currentIndex >= idx && currentIndex !== -1) || Boolean(historicalTime);
+      const isCurrent = status === s.key;
+      return {
+        ...s,
+        isDone,
+        isCurrent,
+        timestamp: historicalTime
+      };
+    });
+
+    if (status === 'DELIVERY_FAILED') {
+      stages.push({
+        key: 'DELIVERY_FAILED',
+        label: 'Delivery Attempt Exception',
+        desc: data.shipment.failureReason || 'Delivery reattempt scheduled',
+        isDone: true,
+        isCurrent: true,
+        timestamp: historyMap['DELIVERY_FAILED'] || data.shipment.updatedAt
+      });
+    } else if (status === 'RETURN_TO_SENDER') {
+      stages.push({
+        key: 'RETURN_TO_SENDER',
+        label: 'Returned to Sender',
+        desc: 'Consignment returning to Slidescoiety central depot',
+        isDone: true,
+        isCurrent: true,
+        timestamp: historyMap['RETURN_TO_SENDER'] || data.shipment.updatedAt
+      });
+    }
+
+    return stages;
   };
 
   // Reset form when modal opens or closes
@@ -126,9 +210,19 @@ export default function AccountModal({
   const handleViewOrder = async (orderId) => {
     setSelectedOrderLoading(true);
     setError('');
+    setTrackingData(null);
+    setTrackingError('');
     try {
       const res = await orderApi.getOrderById(orderId);
       setSelectedOrder(res.data.order);
+
+      // Fetch live consignment tracking
+      try {
+        const trackRes = await orderApi.getOrderTracking(orderId);
+        setTrackingData(trackRes?.data || null);
+      } catch (trackErr) {
+        setTrackingError(trackErr.message || 'Tracking information unavailable');
+      }
     } catch (err) {
       setError(err.message || 'Unable to retrieve order details.');
     } finally {
@@ -811,6 +905,147 @@ export default function AccountModal({
                     </div>
                   )}
 
+                  {/* Consignment Tracking & Logistics Timeline */}
+                  {selectedOrder.status !== 'CANCELLED' && (
+                    <div className="p-4 rounded-2xl bg-black/50 border border-white/10 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-[#e50914]/20 border border-[#e50914]/30 flex items-center justify-center text-[#e50914]">
+                            <Truck className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <div className="text-[10px] font-mono uppercase tracking-wider text-neutral-400">
+                              Consignment Tracking
+                            </div>
+                            <div className="text-xs font-bold text-white">
+                              {trackingData?.hasShipment ? trackingData.shipment.courierName : 'Fulfillment Status'}
+                            </div>
+                          </div>
+                        </div>
+                        {trackingData?.hasShipment && (
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider border ${getShipmentStatusBadge(trackingData.shipment.status)}`}>
+                            {trackingData.shipment.status.replace(/_/g, ' ')}
+                          </span>
+                        )}
+                      </div>
+
+                      {trackingData?.hasShipment ? (
+                        <div className="space-y-4">
+                          {/* Tracking Details Grid */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-black/40 p-3 rounded-xl border border-white/5 font-mono">
+                            <div>
+                              <span className="text-neutral-500 block text-[10px] uppercase">Courier Partner</span>
+                              <span className="font-bold text-white">{trackingData.shipment.courierName}</span>
+                            </div>
+                            <div>
+                              <span className="text-neutral-500 block text-[10px] uppercase">Tracking / AWB Number</span>
+                              {trackingData.shipment.trackingUrl ? (
+                                <a
+                                  href={trackingData.shipment.trackingUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-[#e50914] font-bold hover:underline inline-flex items-center gap-1"
+                                >
+                                  <span>{trackingData.shipment.trackingNumber}</span>
+                                  <ExternalLink className="w-3 h-3 shrink-0" />
+                                </a>
+                              ) : (
+                                <span className="font-bold text-white">{trackingData.shipment.trackingNumber}</span>
+                              )}
+                            </div>
+                            <div>
+                              <span className="text-neutral-500 block text-[10px] uppercase">Estimated Delivery</span>
+                              <span className="text-neutral-300">
+                                {trackingData.shipment.estimatedDeliveryAt
+                                  ? new Date(trackingData.shipment.estimatedDeliveryAt).toLocaleDateString('en-IN', {
+                                      weekday: 'short',
+                                      month: 'short',
+                                      day: 'numeric',
+                                      year: 'numeric'
+                                    })
+                                  : 'Calculation in progress'}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-neutral-500 block text-[10px] uppercase">
+                                {trackingData.shipment.deliveredAt ? 'Delivered On' : trackingData.shipment.dispatchedAt ? 'Dispatched On' : 'Order Status'}
+                              </span>
+                              <span className={trackingData.shipment.deliveredAt ? 'text-emerald-400 font-bold' : trackingData.shipment.dispatchedAt ? 'text-cyan-400 font-bold' : 'text-neutral-300'}>
+                                {trackingData.shipment.deliveredAt
+                                  ? new Date(trackingData.shipment.deliveredAt).toLocaleString('en-IN')
+                                  : trackingData.shipment.dispatchedAt
+                                  ? new Date(trackingData.shipment.dispatchedAt).toLocaleString('en-IN')
+                                  : trackingData.order.status}
+                              </span>
+                            </div>
+                            {trackingData.shipment.failureReason && (
+                              <div className="sm:col-span-2 p-2 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300">
+                                <span className="text-rose-400 block text-[10px] uppercase font-bold">Delivery Notice</span>
+                                <span>{trackingData.shipment.failureReason}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Stepper Timeline */}
+                          <div className="space-y-3 pt-1">
+                            <div className="text-[10px] font-mono uppercase text-neutral-400 font-bold tracking-wider">
+                              Consignment Progress Timeline
+                            </div>
+                            
+                            <div className="relative pl-6 space-y-3.5 before:content-[''] before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-white/10">
+                              {getTimelineStages(trackingData).map((stage) => {
+                                const isCompleted = stage.isDone;
+                                const isCurrent = stage.isCurrent;
+                                return (
+                                  <div key={stage.key} className="relative flex items-start gap-3">
+                                    <div
+                                      className={`absolute -left-6 top-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${
+                                        isCompleted
+                                          ? 'bg-emerald-500 text-black shadow-sm shadow-emerald-500/50'
+                                          : isCurrent
+                                          ? 'bg-[#e50914] text-white animate-pulse'
+                                          : 'bg-neutral-800 text-neutral-500 border border-white/10'
+                                      }`}
+                                    >
+                                      {isCompleted ? '✓' : ''}
+                                    </div>
+                                    <div className="flex-1">
+                                      <div className="flex items-center justify-between text-xs">
+                                        <span className={`font-bold ${isCurrent ? 'text-white' : isCompleted ? 'text-neutral-200' : 'text-neutral-500'}`}>
+                                          {stage.label}
+                                        </span>
+                                        {stage.timestamp && (
+                                          <span className="text-[10px] font-mono text-neutral-400">
+                                            {new Date(stage.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} &bull; {new Date(stage.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                                          </span>
+                                        )}
+                                      </div>
+                                      {stage.desc && (
+                                        <p className="text-[11px] text-neutral-400 mt-0.5">{stage.desc}</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-3.5 rounded-xl bg-black/30 border border-white/5 text-xs text-neutral-400 flex items-center gap-3">
+                          <Clock className="w-4 h-4 text-amber-400 shrink-0" />
+                          <div>
+                            <div className="font-bold text-white text-[11px] uppercase tracking-wider">
+                              Fulfillment In Progress
+                            </div>
+                            <p className="text-[11px] text-neutral-400 mt-0.5">
+                              Your simulator rig is undergoing fabrication and preparation. Live courier tracking will appear here once handed over to our logistics partner.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Order Financial & Date Overview */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                     <div className="p-3 rounded-xl bg-black/40 border border-white/5">
@@ -969,6 +1204,12 @@ export default function AccountModal({
                                   <span className="ml-1.5 px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-[#e50914]/15 text-[#e50914] border border-[#e50914]/30 inline-flex items-center gap-0.5">
                                     <FileText className="w-2.5 h-2.5" />
                                     <span>INV</span>
+                                  </span>
+                                )}
+                                {ord.shipment && (
+                                  <span className="ml-1 px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 inline-flex items-center gap-0.5">
+                                    <Truck className="w-2.5 h-2.5" />
+                                    <span>{ord.shipment.status.replace(/_/g, ' ')}</span>
                                   </span>
                                 )}
                               </div>

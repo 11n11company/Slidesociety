@@ -580,3 +580,90 @@ export async function updateShipmentStatus(shipmentId, input, adminUserId) {
 
   return result;
 }
+
+/**
+ * Customer: Retrieve tracking details and sanitized timeline for customer's own order
+ * Strictly enforces tenant isolation (returns 404 for non-owned orders)
+ * Strictly omits internal admin notes and administrative IDs
+ */
+export async function getCustomerOrderTracking(userId, orderId) {
+  // 1. Fetch order ensuring it strictly belongs to userId (IDOR defense)
+  const order = await prisma.order.findFirst({
+    where: {
+      id: orderId,
+      userId // Strictly restricted to calling user
+    },
+    include: {
+      shipment: {
+        include: {
+          statusHistory: {
+            orderBy: { createdAt: 'asc' },
+            select: {
+              id: true,
+              previousStatus: true,
+              newStatus: true,
+              createdAt: true
+              // Strictly OMIT notes, changedByUserId to protect internal admin deliberations
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // 2. Reject if order does not exist or belongs to another customer
+  if (!order) {
+    const error = new Error('Order not found or you do not have permission to view tracking information.');
+    error.statusCode = 404;
+    error.code = 'ORDER_NOT_FOUND';
+    throw error;
+  }
+
+  // 3. If shipment has not been created yet
+  if (!order.shipment) {
+    return {
+      hasShipment: false,
+      order: {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        status: order.status,
+        createdAt: order.createdAt
+      },
+      shipment: null,
+      timeline: [],
+      message: 'Shipment is being prepared and has not been dispatched yet.'
+    };
+  }
+
+  // 4. Return sanitized customer-facing tracking payload
+  return {
+    hasShipment: true,
+    order: {
+      id: order.id,
+      orderNumber: order.orderNumber,
+      status: order.status,
+      createdAt: order.createdAt
+    },
+    shipment: {
+      id: order.shipment.id,
+      courierName: order.shipment.courierName,
+      trackingNumber: order.shipment.trackingNumber,
+      trackingUrl: order.shipment.trackingUrl,
+      status: order.shipment.status,
+      dispatchedAt: order.shipment.dispatchedAt,
+      estimatedDeliveryAt: order.shipment.estimatedDeliveryAt,
+      deliveredAt: order.shipment.deliveredAt,
+      failureReason: order.shipment.failureReason || null,
+      createdAt: order.shipment.createdAt,
+      updatedAt: order.shipment.updatedAt
+      // Internal admin notes and admin user IDs are strictly omitted!
+    },
+    timeline: (order.shipment.statusHistory || []).map((h) => ({
+      id: h.id,
+      stage: h.newStatus,
+      previousStage: h.previousStatus,
+      timestamp: h.createdAt
+    }))
+  };
+}
+
