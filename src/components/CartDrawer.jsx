@@ -62,6 +62,26 @@ export default function CartDrawer({
     onClose();
   };
 
+  // Escape key and body scroll lock
+  React.useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        handleClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const items = Object.entries(cart)
@@ -223,9 +243,14 @@ export default function CartDrawer({
       />
 
       {/* Drawer */}
-      <aside className="absolute right-0 top-0 bottom-0 w-full max-w-lg bg-[#0f0003] border-l border-white/10 shadow-2xl flex flex-col z-10">
+      <aside
+        role="dialog"
+        aria-modal="true"
+        aria-label="Shopping Cart Drawer"
+        className="absolute right-0 top-0 bottom-0 w-full max-w-lg bg-[#0f0003] border-l border-white/10 shadow-2xl flex flex-col z-10"
+      >
         {/* Drawer Header */}
-        <div className="p-6 border-b border-white/10 flex items-center justify-between">
+        <div className="p-4 sm:p-6 border-b border-white/10 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {step === 'checkout' && (
               <button
@@ -264,7 +289,7 @@ export default function CartDrawer({
         {step === 'cart' && (
           <>
             {/* Cart Item Lines */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
               {items.length === 0 ? (
                 <div className="text-center py-20 text-neutral-400 space-y-3">
                   <ShoppingBag className="w-12 h-12 mx-auto text-neutral-600" />
@@ -278,9 +303,12 @@ export default function CartDrawer({
                     className="flex gap-4 p-4 rounded-xl bg-black/40 border border-white/5"
                   >
                     <img
-                      src={item.image}
+                      src={item.image || '/hero-backdrop-hd.jpg'}
                       alt={item.name}
-                      className="w-18 h-18 object-cover rounded-lg bg-black shrink-0"
+                      loading="lazy"
+                      decoding="async"
+                      onError={(e) => { e.currentTarget.src = '/hero-backdrop-hd.jpg'; }}
+                      className="w-16 h-16 object-cover rounded-lg bg-black shrink-0 border border-white/10"
                     />
                     <div className="flex-1 min-w-0">
                       <h4 className="font-bold text-white text-sm line-clamp-1">{item.name}</h4>
@@ -329,7 +357,7 @@ export default function CartDrawer({
 
             {/* Drawer Footer & Checkout Trigger */}
             {items.length > 0 && (
-              <div className="p-6 border-t border-white/10 bg-black/60 space-y-4">
+              <div className="p-4 sm:p-6 border-t border-white/10 bg-black/60 space-y-4">
                 <div className="space-y-1.5 text-xs text-neutral-300">
                   <div className="flex justify-between">
                     <span>Subtotal</span>

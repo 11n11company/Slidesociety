@@ -30,7 +30,7 @@ export default function Navbar({
     { id: 'home', label: 'Home' },
     { id: 'shop', label: 'Shop', hasDropdown: true },
     { id: 'cockpits', label: 'Cockpits', category: 'Cockpit frames' },
-    { id: 'accessories', label: 'Accessories', category: 'Mounts & adjustments' },
+    { id: 'accessories', label: 'Accessories', category: 'Accessories' },
     { id: 'bundles', label: 'Bundles', category: 'Bundles' },
     { id: 'builder', label: 'Build My Setup' }
   ];
@@ -251,7 +251,7 @@ export default function Navbar({
           </button>
           <button
             type="button"
-            onClick={() => { onNavigate('shop', 'Mounts & adjustments'); setMobileOpen(false); }}
+            onClick={() => { onNavigate('shop', 'Accessories'); setMobileOpen(false); }}
             className="block w-full text-left text-neutral-300 font-medium text-sm py-2"
           >
             Accessories & Mounts

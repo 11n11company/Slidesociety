@@ -1,7 +1,26 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X, Play, Wrench, ShieldCheck, Gauge, ArrowRight } from 'lucide-react';
 
 export default function WatchSetupModal({ isOpen, onClose, onGoToBuilder }) {
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose?.();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
@@ -13,12 +32,17 @@ export default function WatchSetupModal({ isOpen, onClose, onGoToBuilder }) {
       />
 
       {/* Modal Dialog */}
-      <div className="relative z-10 w-full max-w-2xl bg-[#0f0003] border border-white/20 rounded-3xl p-6 sm:p-8 shadow-2xl">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="P1-X Setup and Assembly Guide"
+        className="relative z-10 w-full max-w-2xl bg-[#0f0003] border border-white/20 rounded-3xl p-4 sm:p-8 shadow-2xl"
+      >
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-6">
           <div className="flex items-center gap-3">
             <span className="w-2.5 h-2.5 rounded-full bg-[#e50914] animate-pulse" />
-            <h3 className="font-display font-black text-2xl uppercase tracking-tight text-white">
+            <h3 className="font-display font-black text-xl sm:text-2xl uppercase tracking-tight text-white">
               P1-X Setup & Assembly Guide
             </h3>
           </div>
@@ -26,6 +50,7 @@ export default function WatchSetupModal({ isOpen, onClose, onGoToBuilder }) {
             type="button"
             onClick={onClose}
             className="p-1 rounded-full text-neutral-400 hover:text-white hover:bg-white/10 transition-colors"
+            aria-label="Close setup guide"
           >
             <X className="w-5 h-5" />
           </button>
@@ -36,6 +61,9 @@ export default function WatchSetupModal({ isOpen, onClose, onGoToBuilder }) {
           <img
             src="/hero-backdrop-ultra-hd.webp?v=4"
             alt="P1-X Setup Preview"
+            loading="lazy"
+            decoding="async"
+            onError={(e) => { e.currentTarget.src = '/hero-backdrop-hd.jpg'; }}
             className="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-500"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent flex flex-col items-center justify-center p-6 text-center">

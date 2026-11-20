@@ -212,6 +212,26 @@ export default function AccountModal({
     }
   }, [isOpen, currentUser, initialTab]);
 
+  // Escape key and body scroll lock
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose?.();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [isOpen, onClose]);
+
   // Load customer wishlist from backend
   const loadWishlist = async () => {
     if (!currentUser) return;
@@ -535,6 +555,8 @@ export default function AccountModal({
     }
   };
 
+  if (!isOpen) return null;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
@@ -542,9 +564,12 @@ export default function AccountModal({
 
       {/* Modal Container */}
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Driver Account"
         className={`relative z-10 w-full ${
           mode === 'orders' || mode === 'wishlist' ? 'max-w-2xl' : 'max-w-md'
-        } bg-[#0f0003] border border-white/20 rounded-3xl p-6 sm:p-8 shadow-2xl transition-all duration-300 max-h-[90vh] flex flex-col`}
+        } bg-[#0f0003] border border-white/20 rounded-3xl p-4 sm:p-8 shadow-2xl transition-all duration-300 max-h-[90vh] flex flex-col`}
       >
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-5 shrink-0">
@@ -1026,13 +1051,13 @@ export default function AccountModal({
                                   href={trackingData.shipment.trackingUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-[#e50914] font-bold hover:underline inline-flex items-center gap-1"
+                                  className="text-[#e50914] font-bold hover:underline inline-flex items-center gap-1 break-all"
                                 >
                                   <span>{trackingData.shipment.trackingNumber}</span>
                                   <ExternalLink className="w-3 h-3 shrink-0" />
                                 </a>
                               ) : (
-                                <span className="font-bold text-white">{trackingData.shipment.trackingNumber}</span>
+                                <span className="font-bold text-white break-all">{trackingData.shipment.trackingNumber}</span>
                               )}
                             </div>
                             <div>
@@ -1189,8 +1214,11 @@ export default function AccountModal({
                           className="flex items-center gap-3 p-3 rounded-xl bg-black/50 border border-white/5"
                         >
                           <img
-                            src={it.productImageUrl || '/images/hero-cockpit.png'}
+                            src={it.productImageUrl || '/hero-backdrop-hd.jpg'}
                             alt={it.productName}
+                            loading="lazy"
+                            decoding="async"
+                            onError={(e) => { e.currentTarget.src = '/hero-backdrop-hd.jpg'; }}
                             className="w-12 h-12 object-cover rounded-lg bg-black shrink-0 border border-white/10"
                           />
                           <div className="flex-1 min-w-0">
@@ -1397,6 +1425,8 @@ export default function AccountModal({
                                 alt={prod.name}
                                 className="w-16 h-16 rounded-xl object-cover bg-neutral-900 border border-white/10 shrink-0"
                                 loading="lazy"
+                                decoding="async"
+                                onError={(e) => { e.currentTarget.src = '/hero-backdrop-hd.jpg'; }}
                               />
                               <div className="min-w-0 flex-1">
                                 <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-400 block mb-0.5">

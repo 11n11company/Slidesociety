@@ -18,8 +18,13 @@ export default function ProductCard({
           alt={product.name}
           className="w-full h-full object-cover brightness-90 group-hover:brightness-100 group-hover:scale-105 transition-all duration-500"
           loading="lazy"
+          decoding="async"
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = '/hero-backdrop-hd.jpg';
+          }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#111111] via-transparent to-transparent opacity-60" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#111111] via-transparent to-transparent opacity-60 pointer-events-none" />
 
         {/* Wishlist Button */}
         <button
@@ -28,18 +33,18 @@ export default function ProductCard({
             e.stopPropagation();
             onToggleWishlist(product.id);
           }}
-          className={`absolute top-3 right-3 p-2 rounded-full backdrop-blur-md transition-transform hover:scale-110 ${
+          className={`absolute top-3 right-3 p-2 rounded-full backdrop-blur-md transition-transform hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#e50914] ${
             isWishlisted
               ? 'bg-[#e50914] text-white'
               : 'bg-black/60 text-white/80 hover:text-white border border-white/10'
           }`}
-          aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+          aria-label={isWishlisted ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`}
         >
           <Heart className={`w-3.5 h-3.5 ${isWishlisted ? 'fill-current' : ''}`} />
         </button>
 
         {/* Category Pill */}
-        <span className="absolute bottom-3 left-3 px-2.5 py-1 rounded-md bg-black/70 backdrop-blur-md border border-white/10 font-mono text-[9px] uppercase tracking-wider text-neutral-300">
+        <span className="absolute bottom-3 left-3 px-2.5 py-1 rounded-md bg-black/70 backdrop-blur-md border border-white/10 font-mono text-[9px] uppercase tracking-wider text-neutral-300 pointer-events-none">
           {product.cat}
         </span>
       </div>
@@ -50,16 +55,20 @@ export default function ProductCard({
           {/* Rating */}
           <div className="flex items-center gap-1.5 text-xs text-[#e50914] mb-2 font-mono font-bold">
             <Star className="w-3.5 h-3.5 fill-current" />
-            <span>{product.rating.toFixed(1)}</span>
+            <span>{typeof product.rating === 'number' ? product.rating.toFixed(1) : '5.0'}</span>
             <span className="text-neutral-500 text-[10px]">/ 5.0 DEMO</span>
           </div>
 
-          {/* Title */}
-          <h3
-            onClick={() => onOpenDetail(product.id)}
-            className="font-bold text-white text-lg tracking-tight hover:text-[#e50914] transition-colors cursor-pointer line-clamp-1 mb-1.5"
-          >
-            {product.name}
+          {/* Title as accessible button */}
+          <h3 className="mb-1.5">
+            <button
+              type="button"
+              onClick={() => onOpenDetail(product.id)}
+              className="font-bold text-white text-lg tracking-tight hover:text-[#e50914] transition-colors cursor-pointer line-clamp-1 text-left w-full focus:outline-none focus-visible:underline focus-visible:text-[#e50914]"
+              aria-label={`View details for ${product.name}`}
+            >
+              {product.name}
+            </button>
           </h3>
 
           {/* Spec details */}

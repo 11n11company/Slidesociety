@@ -88,7 +88,13 @@ export const productApi = {
 
     if (params.category && params.category !== 'All') {
       const catLower = params.category.trim().toLowerCase();
-      list = list.filter((p) => p.cat.toLowerCase() === catLower);
+      if (catLower === 'accessories' || catLower === 'mounts & adjustments') {
+        list = list.filter((p) =>
+          ['monitor mounts', 'keyboard trays', 'cable-management kits'].includes(p.cat.toLowerCase())
+        );
+      } else {
+        list = list.filter((p) => p.cat.toLowerCase() === catLower);
+      }
     }
 
     if (params.search && params.search.trim()) {

@@ -174,7 +174,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#070707] text-[#f5f6f2] flex flex-col font-sans">
+    <div className="min-h-screen bg-[#070707] text-[#f5f6f2] flex flex-col font-sans overflow-x-hidden">
       {/* Top Navbar */}
       <Navbar
         currentView={currentView}

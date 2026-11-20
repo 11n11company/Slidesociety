@@ -70,6 +70,24 @@ export default function ProductDetailModal({
     }
   }, [isOpen, productId, currentUser]);
 
+  // Accessibility: Close on Escape key & lock background body scrolling
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    const origOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = origOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen || !product) return null;
 
   // Initiate Write Review form
@@ -166,14 +184,19 @@ export default function ProductDetailModal({
   const eligibility = reviewsData?.eligibility || { canReview: false };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
       {/* Backdrop */}
       <div onClick={onClose} className="absolute inset-0 bg-black/85 backdrop-blur-md" />
 
       {/* Modal Container */}
-      <div className="relative z-10 w-full max-w-4xl bg-[#0a0002] border border-white/20 rounded-3xl p-6 sm:p-8 shadow-2xl transition-all duration-300 max-h-[92vh] flex flex-col font-sans">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${product.name} Details and Reviews`}
+        className="relative z-10 w-full max-w-4xl bg-[#0a0002] border border-white/20 rounded-3xl p-4 sm:p-7 md:p-8 shadow-2xl transition-all duration-300 max-h-[92vh] flex flex-col font-sans"
+      >
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-6 shrink-0">
+        <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-5 sm:mb-6 shrink-0">
           <div className="flex items-center gap-3">
             <span className="w-2.5 h-2.5 rounded-full bg-[#e50914]" />
             <span className="font-mono text-xs uppercase tracking-widest text-neutral-400">
@@ -183,29 +206,35 @@ export default function ProductDetailModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded-full text-neutral-400 hover:text-white hover:bg-white/10 transition-colors"
-            aria-label="Close"
+            className="p-1 rounded-full text-neutral-400 hover:text-white hover:bg-white/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#e50914]"
+            aria-label="Close modal"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Modal Scrollable Body */}
-        <div className="flex-1 overflow-y-auto space-y-8 pr-1">
+        <div className="flex-1 overflow-y-auto space-y-6 sm:space-y-8 pr-1">
           {/* ======================================================== */}
           {/* TOP SECTION: PRODUCT SHOWCASE & SPECS                    */}
           {/* ======================================================== */}
-          <div className="grid md:grid-cols-2 gap-8 items-start">
+          <div className="grid md:grid-cols-2 gap-6 sm:gap-8 items-start">
             {/* Product Image Stage */}
             <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-[#161616] border border-white/10 group">
               <img
                 src={product.image}
                 alt={product.name}
+                loading="lazy"
+                decoding="async"
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = '/hero-backdrop-hd.jpg';
+                }}
                 className="w-full h-full object-cover brightness-95 group-hover:scale-105 transition-all duration-500"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 pointer-events-none" />
 
-              <span className="absolute bottom-3 left-3 px-3 py-1 rounded-md bg-black/70 backdrop-blur-md border border-white/10 font-mono text-[10px] uppercase tracking-wider text-neutral-300">
+              <span className="absolute bottom-3 left-3 px-3 py-1 rounded-md bg-black/70 backdrop-blur-md border border-white/10 font-mono text-[10px] uppercase tracking-wider text-neutral-300 pointer-events-none">
                 {product.cat}
               </span>
             </div>

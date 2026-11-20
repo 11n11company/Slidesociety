@@ -176,6 +176,9 @@ export default function RigBuilder({ onAddToCart, onShowToast }) {
                       <img
                         src={item.image}
                         alt={item.name}
+                        loading="lazy"
+                        decoding="async"
+                        onError={(e) => { e.currentTarget.src = '/hero-backdrop-hd.jpg'; }}
                         className="w-full h-full object-cover brightness-90 hover:brightness-100 transition-all"
                       />
                     </div>

@@ -39,7 +39,7 @@ export default function Footer({ onNavigate }) {
           </button>
           <button
             type="button"
-            onClick={() => onNavigate('shop', 'Mounts & adjustments')}
+            onClick={() => onNavigate('shop', 'Accessories')}
             className="text-neutral-400 hover:text-white transition-colors"
           >
             Accessories

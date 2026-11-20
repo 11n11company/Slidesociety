@@ -262,7 +262,12 @@ export async function getAllProducts({
       const where = {};
 
       if (cleanCategory && cleanCategory.toLowerCase() !== 'all') {
-        where.category = { equals: cleanCategory, mode: 'insensitive' };
+        const catLower = cleanCategory.toLowerCase();
+        if (catLower === 'accessories' || catLower === 'mounts & adjustments') {
+          where.category = { in: ['Monitor mounts', 'Keyboard trays', 'Cable-management kits'] };
+        } else {
+          where.category = { equals: cleanCategory, mode: 'insensitive' };
+        }
       }
 
       if (cleanSearch) {
