@@ -479,5 +479,58 @@ export async function sendShippingNotificationEmail({ to, customerName, order, s
   };
 }
 
+/**
+ * Send Review Moderation Notification Email
+ * Triggered when admin approves or rejects a customer review
+ */
+export async function sendReviewModerationEmail({ to, customerName, productName, status, moderationNote }) {
+  if (!to) return { sent: false, error: 'No recipient email' };
+
+  const isApproved = status === 'APPROVED';
+  const subject = isApproved
+    ? `Your review for ${productName} has been approved!`
+    : `Update on your review for ${productName}`;
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; background-color: #080002; color: #f5f6f2; padding: 40px; border-radius: 12px; max-width: 600px; margin: auto;">
+      <h1 style="color: #e50914; margin-bottom: 8px; text-transform: uppercase;">SLIDESCOIETY</h1>
+      <p style="font-size: 14px; color: #a3a3a3; margin-top: 0;">SIM RACING STORE</p>
+      <hr style="border: none; border-top: 1px solid #262626; margin: 24px 0;" />
+      <h2 style="color: #ffffff;">Hello ${customerName || 'Driver'},</h2>
+      <p style="color: #d4d4d4; font-size: 14px; line-height: 1.6;">
+        Your product review for <strong>${productName}</strong> has been 
+        <span style="color: ${isApproved ? '#10b981' : '#f43f5e'}; font-weight: bold;">${status}</span> by our pit wall moderation team.
+      </p>
+      ${moderationNote ? `<p style="background: #171717; padding: 12px; border-radius: 8px; font-size: 13px; color: #a3a3a3;"><strong>Note:</strong> ${moderationNote}</p>` : ''}
+      <p style="color: #737373; font-size: 12px; margin-top: 24px;">
+        Thank you for contributing your genuine driver feedback to the Slidescoiety racing community.
+      </p>
+    </div>
+  `;
+
+  if (transporter) {
+    try {
+      await transporter.sendMail({
+        from: env.EMAIL_FROM,
+        to,
+        subject,
+        html
+      });
+      logger.info(`Review moderation email delivered to [${to}] for status [${status}]`);
+      return { sent: true, provider: 'smtp' };
+    } catch (err) {
+      logger.error(`SMTP delivery of review moderation email to [${to}] failed: ${err.message}`);
+      return { sent: false, error: err.message };
+    }
+  }
+
+  logger.info(`[DEV-EMAIL] Simulated review moderation email [${status}] to [${to}] for [${productName}]`);
+  return {
+    sent: false,
+    simulated: true,
+    message: 'SMTP not configured. Email simulated.'
+  };
+}
+
 
 

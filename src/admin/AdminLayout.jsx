@@ -13,7 +13,8 @@ import {
   X,
   Shield,
   ShieldCheck,
-  UserCheck
+  UserCheck,
+  Star
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -23,7 +24,8 @@ const NAV_ITEMS = [
   { id: '/admin/inventory', label: 'Inventory', icon: Layers },
   { id: '/admin/customers', label: 'Customers', icon: Users },
   { id: '/admin/payments', label: 'Payments', icon: CreditCard },
-  { id: '/admin/invoices', label: 'Invoices', icon: FileText }
+  { id: '/admin/invoices', label: 'Invoices', icon: FileText },
+  { id: '/admin/reviews', label: 'Reviews', icon: Star }
 ];
 
 export default function AdminLayout({

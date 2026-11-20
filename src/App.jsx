@@ -6,6 +6,7 @@ import RigBuilder from './components/RigBuilder';
 import CartDrawer from './components/CartDrawer';
 import WatchSetupModal from './components/WatchSetupModal';
 import AccountModal from './components/AccountModal';
+import ProductDetailModal from './components/ProductDetailModal';
 import Footer from './components/Footer';
 import { products, byId } from './data/products';
 import { authApi } from './services/authApi';
@@ -23,6 +24,7 @@ export default function App() {
   const [accountOpen, setAccountOpen] = useState(false);
   const [accountInitialTab, setAccountInitialTab] = useState('profile');
   const [currentUser, setCurrentUser] = useState(null);
+  const [selectedProductDetailId, setSelectedProductDetailId] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
 
@@ -211,7 +213,7 @@ export default function App() {
               wishlist={wishlist}
               onToggleWishlist={handleToggleWishlist}
               onOpenDetail={(id) => {
-                handleNavigate('shop');
+                setSelectedProductDetailId(id);
               }}
               selectedCategory={selectedCategory}
               onSelectCategory={setSelectedCategory}
@@ -265,7 +267,9 @@ export default function App() {
             onAddToCart={handleAddToCart}
             wishlist={wishlist}
             onToggleWishlist={handleToggleWishlist}
-            onOpenDetail={() => {}}
+            onOpenDetail={(id) => {
+              setSelectedProductDetailId(id);
+            }}
             selectedCategory={selectedCategory}
             onSelectCategory={setSelectedCategory}
             onNavigateToShop={() => {}}
@@ -321,6 +325,21 @@ export default function App() {
         onToggleWishlist={handleToggleWishlist}
         onAddToCart={handleAddToCart}
         onNavigateToShop={() => handleNavigate('shop')}
+      />
+
+      <ProductDetailModal
+        productId={selectedProductDetailId}
+        isOpen={Boolean(selectedProductDetailId)}
+        onClose={() => setSelectedProductDetailId(null)}
+        currentUser={currentUser}
+        wishlist={wishlist}
+        onToggleWishlist={handleToggleWishlist}
+        onAddToCart={handleAddToCart}
+        onOpenAccount={() => {
+          setAccountInitialTab('login');
+          setAccountOpen(true);
+        }}
+        onShowToast={showToast}
       />
 
       {/* Toast Notification Pill */}

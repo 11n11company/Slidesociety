@@ -8,6 +8,7 @@ import AdminInventory from './AdminInventory';
 import AdminCustomers from './AdminCustomers';
 import AdminPayments from './AdminPayments';
 import AdminInvoices from './AdminInvoices';
+import AdminReviews from './AdminReviews';
 import { authApi } from '../services/authApi';
 import { RefreshCw } from 'lucide-react';
 
@@ -18,7 +19,8 @@ const PAGE_TITLES = {
   '/admin/inventory': 'Inventory & Stock Logistics',
   '/admin/customers': 'Driver Accounts',
   '/admin/payments': 'Payment Transaction Ledger',
-  '/admin/invoices': 'Tax Invoices Archive'
+  '/admin/invoices': 'Tax Invoices Archive',
+  '/admin/reviews': 'Customer Reviews Moderation'
 };
 
 export default function AdminApp({ onExitAdmin }) {
@@ -188,6 +190,12 @@ export default function AdminApp({ onExitAdmin }) {
 
       {currentRoute === '/admin/invoices' && (
         <AdminInvoices
+          currentUser={currentUser}
+        />
+      )}
+
+      {currentRoute === '/admin/reviews' && (
+        <AdminReviews
           currentUser={currentUser}
         />
       )}
