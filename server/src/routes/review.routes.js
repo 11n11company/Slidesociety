@@ -7,6 +7,7 @@ import {
   createReview
 } from '../controllers/review.controller.js';
 import { authenticateCustomer, optionalCustomer } from '../middleware/auth.middleware.js';
+import { reviewRateLimiter } from '../middleware/rateLimiter.js';
 
 const router = Router({ mergeParams: true });
 
@@ -17,6 +18,6 @@ router.delete('/:reviewId', authenticateCustomer, deleteReview);
 // Alternate direct access: /api/v1/reviews/product/:productId
 router.get('/product/:productId', optionalCustomer, getProductReviews);
 router.get('/product/:productId/eligibility', authenticateCustomer, checkEligibility);
-router.post('/product/:productId', authenticateCustomer, createReview);
+router.post('/product/:productId', authenticateCustomer, reviewRateLimiter, createReview);
 
 export default router;

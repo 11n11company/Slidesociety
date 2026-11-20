@@ -3,7 +3,8 @@ import { ApiResponse } from '../utils/apiResponse.js';
 
 export async function getProducts(req, res, next) {
   try {
-    const { category, search, minPrice, maxPrice, sortBy, page, limit } = req.query;
+    const { category, search, minPrice, maxPrice, page, limit } = req.query;
+    const sortBy = req.query.sortBy || req.query.sort;
 
     // Validate minPrice
     if (minPrice !== undefined && minPrice !== '') {

@@ -37,3 +37,40 @@ export const forgotPasswordLimiter = rateLimit({
   }
 });
 
+/**
+ * Payment Rate Limiter
+ * Prevents payment creation or verification brute force attacks
+ */
+export const paymentRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: env.NODE_ENV === 'production' ? 60 : 1000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: {
+      code: 'TOO_MANY_REQUESTS',
+      message: 'Too many payment requests from this IP address. Please try again after 15 minutes.'
+    }
+  }
+});
+
+/**
+ * Review Submission Rate Limiter
+ */
+export const reviewRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: env.NODE_ENV === 'production' ? 30 : 500,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: {
+      code: 'TOO_MANY_REQUESTS',
+      message: 'Too many review submissions. Please wait a few minutes before submitting again.'
+    }
+  }
+});
+
+
+
