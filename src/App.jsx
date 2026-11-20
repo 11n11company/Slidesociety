@@ -9,6 +9,7 @@ import AccountModal from './components/AccountModal';
 import Footer from './components/Footer';
 import { products, byId } from './data/products';
 import { authApi } from './services/authApi';
+import { wishlistApi } from './services/wishlistApi';
 import AdminApp from './admin/AdminApp';
 
 export default function App() {
@@ -34,11 +35,20 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // Check existing session on mount
+  // Check existing session on mount & sync wishlist
   useEffect(() => {
     authApi.getMe().then((user) => {
       if (user) {
         setCurrentUser(user);
+        wishlistApi
+          .getWishlist()
+          .then((res) => {
+            if (res?.data && Array.isArray(res.data)) {
+              const ids = res.data.map((item) => item.productId || item.product?.id).filter(Boolean);
+              setWishlist(ids);
+            }
+          })
+          .catch((err) => console.warn('Wishlist initial sync error:', err));
       }
     });
   }, []);
@@ -50,7 +60,7 @@ export default function App() {
     setTimeout(() => setToastVisible(false), 2600);
   };
 
-  // Handle successful login or registration with guest cart preservation
+  // Handle successful login or registration with guest cart & wishlist preservation
   const handleAuthSuccess = async (user) => {
     setCurrentUser(user);
     // Preserve & merge guest cart into customer account in PostgreSQL
@@ -64,11 +74,35 @@ export default function App() {
         console.warn('Cart synchronization error:', err);
       }
     }
+
+    // Preserve & merge guest wishlist into customer account in PostgreSQL
+    if (wishlist && wishlist.length > 0) {
+      try {
+        const wRes = await wishlistApi.mergeWishlist(wishlist);
+        if (wRes?.data?.items && Array.isArray(wRes.data.items)) {
+          const ids = wRes.data.items.map((it) => it.productId || it.product?.id).filter(Boolean);
+          setWishlist(ids);
+        }
+      } catch (err) {
+        console.warn('Wishlist merge error:', err);
+      }
+    } else {
+      try {
+        const wRes = await wishlistApi.getWishlist();
+        if (wRes?.data && Array.isArray(wRes.data)) {
+          const ids = wRes.data.map((it) => it.productId || it.product?.id).filter(Boolean);
+          setWishlist(ids);
+        }
+      } catch (err) {
+        console.warn('Wishlist sync error:', err);
+      }
+    }
   };
 
   // Handle successful logout
   const handleLogoutSuccess = () => {
     setCurrentUser(null);
+    setWishlist([]);
   };
 
   // Navigation router
@@ -102,14 +136,24 @@ export default function App() {
     });
   };
 
-  // Toggle wishlist
-  const handleToggleWishlist = (id) => {
-    setWishlist((prev) => {
-      const exists = prev.includes(id);
-      const next = exists ? prev.filter((x) => x !== id) : [...prev, id];
-      showToast(exists ? 'Removed from wishlist' : 'Added to wishlist');
-      return next;
-    });
+  // Toggle wishlist (with backend sync for authenticated drivers)
+  const handleToggleWishlist = async (id) => {
+    const exists = wishlist.includes(id);
+    const next = exists ? wishlist.filter((x) => x !== id) : [...wishlist, id];
+    setWishlist(next);
+    showToast(exists ? 'Removed from wishlist' : 'Added to wishlist');
+
+    if (currentUser) {
+      try {
+        if (exists) {
+          await wishlistApi.removeFromWishlist(id);
+        } else {
+          await wishlistApi.addToWishlist(id);
+        }
+      } catch (err) {
+        console.warn('Wishlist backend sync error:', err);
+      }
+    }
   };
 
   const cartTotalCount = Object.values(cart).reduce((a, b) => a + b, 0);
@@ -145,7 +189,8 @@ export default function App() {
         currentUser={currentUser}
         wishlistCount={wishlist.length}
         onOpenWishlist={() => {
-          showToast(`Your wishlist contains ${wishlist.length} item(s)`);
+          setAccountInitialTab('wishlist');
+          setAccountOpen(true);
         }}
       />
 
@@ -272,6 +317,10 @@ export default function App() {
         onAuthSuccess={handleAuthSuccess}
         onLogoutSuccess={handleLogoutSuccess}
         initialTab={accountInitialTab}
+        wishlist={wishlist}
+        onToggleWishlist={handleToggleWishlist}
+        onAddToCart={handleAddToCart}
+        onNavigateToShop={() => handleNavigate('shop')}
       />
 
       {/* Toast Notification Pill */}

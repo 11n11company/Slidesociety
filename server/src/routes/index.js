@@ -11,6 +11,7 @@ import adminCustomerRoutes from './adminCustomer.routes.js';
 import adminShippingRoutes from './adminShipping.routes.js';
 import paymentRoutes from './payment.routes.js';
 import invoiceRoutes from './invoice.routes.js';
+import wishlistRoutes from './wishlist.routes.js';
 import { getOverview } from '../controllers/adminOverview.controller.js';
 import { getCategories } from '../controllers/product.controller.js';
 import { authenticateCustomer, requireRole } from '../middleware/auth.middleware.js';
@@ -25,6 +26,9 @@ router.use('/v1/auth', authRoutes);
 
 // /api/v1/cart
 router.use('/v1/cart', cartRoutes);
+
+// /api/v1/wishlist (Customer Wishlist Management)
+router.use('/v1/wishlist', wishlistRoutes);
 
 // /api/v1/orders (Customer Order Management)
 router.use('/v1/orders', orderRoutes);

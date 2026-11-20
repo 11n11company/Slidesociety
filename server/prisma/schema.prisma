@@ -83,6 +83,7 @@ model User {
   notifications       Notification[]
   statusChanges       OrderStatusHistory[]
   shipmentStatusChanges ShipmentStatusHistory[]
+  wishlistItems       WishlistItem[]
 
   @@index([email])
   @@index([role])
@@ -130,6 +131,7 @@ model Product {
   cartItems          CartItem[]
   orderItems         OrderItem[]
   reservations       StockReservation[]
+  wishlistItems      WishlistItem[]
 
   @@index([category])
   @@index([isAvailable])
@@ -397,6 +399,20 @@ model ShipmentStatusHistory {
 
   @@index([shipmentId])
   @@index([newStatus])
+}
+
+model WishlistItem {
+  id        String   @id @default(uuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@index([productId])
 }
 
 

@@ -25,13 +25,17 @@ import {
   Download,
   Send,
   Truck,
-  ExternalLink
+  ExternalLink,
+  Heart,
+  ShoppingCart,
+  Trash2
 } from 'lucide-react';
 import { authApi } from '../services/authApi';
 import { orderApi } from '../services/orderApi';
 import { paymentApi } from '../services/paymentApi';
 import { invoiceApi } from '../services/invoiceApi';
-import { fmt } from '../data/products';
+import { wishlistApi } from '../services/wishlistApi';
+import { fmt, byId } from '../data/products';
 
 export default function AccountModal({
   isOpen,
@@ -40,9 +44,13 @@ export default function AccountModal({
   currentUser,
   onAuthSuccess,
   onLogoutSuccess,
-  initialTab = 'profile'
+  initialTab = 'profile',
+  wishlist = [],
+  onToggleWishlist,
+  onAddToCart,
+  onNavigateToShop
 }) {
-  const [mode, setMode] = useState('login'); // 'login' | 'register' | 'forgot' | 'reset' | 'verify' | 'profile' | 'orders'
+  const [mode, setMode] = useState('login'); // 'login' | 'register' | 'forgot' | 'reset' | 'verify' | 'profile' | 'orders' | 'wishlist'
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -69,6 +77,10 @@ export default function AccountModal({
   const [trackingData, setTrackingData] = useState(null);
   const [trackingLoading, setTrackingLoading] = useState(false);
   const [trackingError, setTrackingError] = useState('');
+
+  // Wishlist State
+  const [wishlistItems, setWishlistItems] = useState([]);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
 
   // Status Badge Mapper
   const getStatusBadge = (status) => {
@@ -184,14 +196,49 @@ export default function AccountModal({
         if (initialTab === 'orders') {
           setMode('orders');
           loadOrders();
+        } else if (initialTab === 'wishlist') {
+          setMode('wishlist');
+          loadWishlist();
         } else {
           setMode('profile');
         }
       } else {
-        setMode('login');
+        if (initialTab === 'wishlist') {
+          setMode('wishlist');
+        } else {
+          setMode('login');
+        }
       }
     }
   }, [isOpen, currentUser, initialTab]);
+
+  // Load customer wishlist from backend
+  const loadWishlist = async () => {
+    if (!currentUser) return;
+    setWishlistLoading(true);
+    try {
+      const res = await wishlistApi.getWishlist();
+      setWishlistItems(res.data || []);
+    } catch (err) {
+      console.error('Failed to load wishlist:', err);
+    } finally {
+      setWishlistLoading(false);
+    }
+  };
+
+  // Remove item from wishlist
+  const handleRemoveWishlist = async (productId) => {
+    try {
+      if (currentUser) {
+        await wishlistApi.removeFromWishlist(productId);
+      }
+      onToggleWishlist?.(productId);
+      setWishlistItems((prev) => prev.filter((it) => (it.productId || it.product?.id || it.id) !== productId));
+      onShowToast?.('Removed from wishlist');
+    } catch (err) {
+      setError(err.message || 'Failed to remove from wishlist');
+    }
+  };
 
   // Load customer orders
   const loadOrders = async () => {
@@ -496,7 +543,7 @@ export default function AccountModal({
       {/* Modal Container */}
       <div
         className={`relative z-10 w-full ${
-          mode === 'orders' ? 'max-w-2xl' : 'max-w-md'
+          mode === 'orders' || mode === 'wishlist' ? 'max-w-2xl' : 'max-w-md'
         } bg-[#0f0003] border border-white/20 rounded-3xl p-6 sm:p-8 shadow-2xl transition-all duration-300 max-h-[90vh] flex flex-col`}
       >
         {/* Header */}
@@ -518,6 +565,8 @@ export default function AccountModal({
                 ? selectedOrder
                   ? `Order ${selectedOrder.orderNumber}`
                   : 'Order History & Telemetry'
+                : mode === 'wishlist'
+                ? 'Saved Telemetry & Wishlist'
                 : mode === 'profile'
                 ? 'Driver Profile'
                 : mode === 'register'
@@ -541,8 +590,8 @@ export default function AccountModal({
           </button>
         </div>
 
-        {/* Auth Mode Toggle Tabs (when not logged in & in login/register) */}
-        {!currentUser && (mode === 'login' || mode === 'register') && (
+        {/* Auth Mode Toggle Tabs (when not logged in) */}
+        {!currentUser && (mode === 'login' || mode === 'register' || mode === 'wishlist') && (
           <div className="flex rounded-xl bg-black/60 p-1 border border-white/10 mb-6 shrink-0">
             <button
               type="button"
@@ -574,10 +623,26 @@ export default function AccountModal({
             >
               Register
             </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMode('wishlist');
+                setError('');
+                setSuccessMsg('');
+              }}
+              className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                mode === 'wishlist'
+                  ? 'bg-[#e50914] text-white shadow-md shadow-[#e50914]/30'
+                  : 'text-neutral-400 hover:text-white'
+              }`}
+            >
+              <Heart className="w-3.5 h-3.5" />
+              <span>Wishlist{wishlist.length > 0 ? ` (${wishlist.length})` : ''}</span>
+            </button>
           </div>
         )}
 
-        {/* Authenticated Customer Navigation Tabs (Profile vs Orders) */}
+        {/* Authenticated Customer Navigation Tabs (Profile vs Orders vs Wishlist) */}
         {currentUser && (
           <div className="flex rounded-xl bg-black/60 p-1 border border-white/10 mb-5 shrink-0">
             <button
@@ -612,6 +677,23 @@ export default function AccountModal({
             >
               <Package className="w-3.5 h-3.5" />
               <span>My Orders</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMode('wishlist');
+                setSelectedOrder(null);
+                setError('');
+                loadWishlist();
+              }}
+              className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-2 ${
+                mode === 'wishlist'
+                  ? 'bg-[#e50914] text-white shadow-md shadow-[#e50914]/30'
+                  : 'text-neutral-400 hover:text-white'
+              }`}
+            >
+              <Heart className="w-3.5 h-3.5" />
+              <span>Wishlist{wishlist.length > 0 ? ` (${wishlist.length})` : ''}</span>
             </button>
           </div>
         )}
@@ -1228,6 +1310,154 @@ export default function AccountModal({
                   )}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* ======================================================== */}
+          {/* VIEW: WISHLIST MANAGEMENT                                */}
+          {/* ======================================================== */}
+          {mode === 'wishlist' && (
+            <div className="space-y-4">
+              {wishlistLoading ? (
+                <div className="py-12 flex flex-col items-center justify-center gap-3">
+                  <Loader2 className="w-8 h-8 animate-spin text-[#e50914]" />
+                  <p className="text-xs font-mono uppercase text-neutral-400">Loading Wishlist...</p>
+                </div>
+              ) : (() => {
+                let displayItems = [];
+                if (currentUser && wishlistItems.length > 0) {
+                  displayItems = wishlistItems;
+                } else if (wishlist && wishlist.length > 0) {
+                  displayItems = wishlist
+                    .map((id) => {
+                      const found = byId(id);
+                      return found ? { id, productId: id, product: found } : null;
+                    })
+                    .filter(Boolean);
+                }
+
+                if (displayItems.length === 0) {
+                  return (
+                    <div className="py-12 px-4 text-center">
+                      <div className="w-16 h-16 rounded-full bg-[#161616] border border-white/10 flex items-center justify-center mx-auto mb-4 text-neutral-500">
+                        <Heart className="w-8 h-8" />
+                      </div>
+                      <h4 className="font-display font-black text-lg uppercase tracking-tight text-white mb-2">
+                        Your Wishlist is Empty
+                      </h4>
+                      <p className="text-xs text-neutral-400 max-w-sm mx-auto mb-6 leading-relaxed">
+                        Save direct drive bases, load-cell pedals, and extruded cockpits here to quickly configure your dream setup.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onClose();
+                          onNavigateToShop?.();
+                        }}
+                        className="px-6 py-2.5 rounded-full bg-[#e50914] hover:bg-[#ff1f2d] text-white font-bold text-xs uppercase tracking-wider transition-all shadow-lg shadow-[#e50914]/40"
+                      >
+                        Explore Hardware Grid
+                      </button>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-3">
+                    {!currentUser && (
+                      <div className="flex items-center justify-between p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300">
+                        <span>Guest Wishlist — items saved in this session.</span>
+                        <button
+                          type="button"
+                          onClick={() => setMode('login')}
+                          className="text-xs font-bold text-[#e50914] hover:underline uppercase"
+                        >
+                          Sign In to Save
+                        </button>
+                      </div>
+                    )}
+
+                    <div className="space-y-3">
+                      {displayItems.map((item) => {
+                        const prod = item.product || byId(item.productId);
+                        if (!prod) return null;
+                        const pid = item.productId || prod.id;
+                        const isOutOfStock = prod.stockQuantity === 0 || prod.isAvailable === false || prod.available === false;
+                        const displayPrice = prod.priceInr ? fmt(prod.priceInr) : prod.price ? fmt(prod.price) : 'N/A';
+                        const imgSrc = prod.imageUrl || prod.image || '/hero-backdrop-hd.jpg';
+
+                        return (
+                          <div
+                            key={item.id || pid}
+                            className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-2xl bg-black/50 border border-white/10 hover:border-white/20 transition-all group"
+                          >
+                            <div className="flex items-center gap-3.5 flex-1 min-w-0">
+                              <img
+                                src={imgSrc}
+                                alt={prod.name}
+                                className="w-16 h-16 rounded-xl object-cover bg-neutral-900 border border-white/10 shrink-0"
+                                loading="lazy"
+                              />
+                              <div className="min-w-0 flex-1">
+                                <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-400 block mb-0.5">
+                                  {prod.category || prod.cat}
+                                </span>
+                                <h4 className="font-bold text-sm text-white truncate group-hover:text-[#e50914] transition-colors">
+                                  {prod.name}
+                                </h4>
+                                <div className="flex items-center gap-3 mt-1.5">
+                                  <span className="font-mono text-xs font-bold text-white">
+                                    {displayPrice}
+                                  </span>
+                                  {isOutOfStock ? (
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-rose-500/15 border border-rose-500/30 text-rose-400">
+                                      Out of Stock
+                                    </span>
+                                  ) : (
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
+                                      In Stock
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                              <button
+                                type="button"
+                                disabled={isOutOfStock}
+                                onClick={() => {
+                                  onAddToCart?.(pid);
+                                  onShowToast?.(`Added ${prod.name} to cart`);
+                                }}
+                                className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
+                                  isOutOfStock
+                                    ? 'bg-neutral-800 text-neutral-500 cursor-not-allowed border border-white/5'
+                                    : 'bg-[#e50914] hover:bg-[#ff1f2d] text-white shadow-md shadow-[#e50914]/30'
+                                }`}
+                                title={isOutOfStock ? 'Product currently out of stock' : 'Add to cart'}
+                              >
+                                <ShoppingCart className="w-3.5 h-3.5" />
+                                <span>Add to Cart</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveWishlist(pid)}
+                                className="p-2 rounded-xl text-neutral-400 hover:text-rose-400 hover:bg-rose-500/10 border border-white/10 hover:border-rose-500/30 transition-colors"
+                                title="Remove from wishlist"
+                                aria-label="Remove from wishlist"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
