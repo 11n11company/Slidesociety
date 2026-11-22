@@ -17,11 +17,15 @@ import {
   ShieldCheck,
   CreditCard,
   QrCode,
-  RotateCcw
+  RotateCcw,
+  MessageCircle,
+  Lock,
+  Mail
 } from 'lucide-react';
 import { byId, fmt } from '../data/products';
 import { orderApi } from '../services/orderApi';
 import { paymentApi } from '../services/paymentApi';
+import { authApi } from '../services/authApi';
 
 export default function CartDrawer({
   isOpen,
@@ -31,10 +35,11 @@ export default function CartDrawer({
   onClearCart,
   onShowToast,
   currentUser,
+  onAuthSuccess,
   onOpenAccount,
   onViewOrders
 }) {
-  const [step, setStep] = useState('cart'); // 'cart' | 'checkout' | 'payment' | 'confirmation'
+  const [step, setStep] = useState('cart'); // 'cart' | 'checkout' | 'payment' | 'confirmation' | 'whatsapp_confirmation'
   const [loading, setLoading] = useState(false);
   const [verifyingPayment, setVerifyingPayment] = useState(false);
   const [error, setError] = useState('');
@@ -42,6 +47,12 @@ export default function CartDrawer({
   const [paymentInfo, setPaymentInfo] = useState(null);
   const [paymentDismissed, setPaymentDismissed] = useState(false);
   const [qrCodeData, setQrCodeData] = useState(null);
+  const [whatsappOrder, setWhatsappOrder] = useState(null);
+  const [whatsappUrl, setWhatsappUrl] = useState('');
+
+  // Guest Account Creation Fields
+  const [accountEmail, setAccountEmail] = useState('');
+  const [accountPassword, setAccountPassword] = useState('');
 
   // Address form fields
   const [recipientName, setRecipientName] = useState('');
@@ -59,6 +70,8 @@ export default function CartDrawer({
     setStep('cart');
     setError('');
     setPaymentDismissed(false);
+    setWhatsappOrder(null);
+    setWhatsappUrl('');
     onClose();
   };
 
@@ -99,17 +112,157 @@ export default function CartDrawer({
 
   // Pre-fill user data when navigating to checkout
   const handleProceedToCheckout = () => {
-    if (!currentUser) {
-      onShowToast?.('Please sign in to your Driver Account to proceed with checkout.');
-      onOpenAccount?.();
-      return;
-    }
-
-    if (!recipientName && currentUser.fullName) {
-      setRecipientName(currentUser.fullName);
+    if (currentUser) {
+      if (!recipientName && currentUser.fullName) {
+        setRecipientName(currentUser.fullName);
+      }
+      if (!accountEmail && currentUser.email) {
+        setAccountEmail(currentUser.email);
+      }
+      if (!phone && currentUser.phone) {
+        setPhone(currentUser.phone);
+      }
     }
     setError('');
     setStep('checkout');
+  };
+
+  // Helper to ensure driver account exists or is created on-the-fly
+  const ensureDriverAccount = async () => {
+    if (currentUser) return currentUser;
+
+    if (!accountEmail || !accountPassword) {
+      throw new Error('Please enter your email and choose a password to create your Slidescoiety Driver Account.');
+    }
+
+    if (accountPassword.length < 8 || !/[A-Za-z]/.test(accountPassword) || !/[0-9]/.test(accountPassword)) {
+      throw new Error('Account password must be at least 8 characters long and contain both letters and numbers.');
+    }
+
+    try {
+      const regRes = await authApi.register({
+        fullName: recipientName || 'Sim Racer',
+        email: accountEmail.trim().toLowerCase(),
+        password: accountPassword,
+        confirmPassword: accountPassword
+      });
+      const newUser = regRes?.data?.user;
+      onAuthSuccess?.(newUser);
+      return newUser;
+    } catch (err) {
+      if (err.code === 'EMAIL_ALREADY_EXISTS') {
+        try {
+          const logRes = await authApi.login({
+            email: accountEmail.trim().toLowerCase(),
+            password: accountPassword
+          });
+          const loggedUser = logRes?.data?.user;
+          onAuthSuccess?.(loggedUser);
+          return loggedUser;
+        } catch (loginErr) {
+          throw new Error('An account with this email already exists. Please verify your password or sign in first.');
+        }
+      }
+      throw err;
+    }
+  };
+
+  // WhatsApp Checkout Handler: Registers Driver & Order in Database, then opens WhatsApp with full build details
+  const handleWhatsAppCheckout = async (e) => {
+    if (e) e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      if (!recipientName || recipientName.trim().length < 2) {
+        throw new Error('Please enter your full name.');
+      }
+      if (!phone || phone.trim().length < 7) {
+        throw new Error('Please enter a valid contact phone number.');
+      }
+      if (!streetLine1 || streetLine1.trim().length < 3) {
+        throw new Error('Please enter your street address.');
+      }
+      if (!city || city.trim().length < 2) {
+        throw new Error('Please enter your city.');
+      }
+      if (!state || state.trim().length < 2) {
+        throw new Error('Please enter your state.');
+      }
+      if (!postalCode || postalCode.trim().length < 3) {
+        throw new Error('Please enter your PIN code.');
+      }
+
+      // 1. Ensure driver account is created or active
+      const user = await ensureDriverAccount();
+
+      // 2. Register order in database
+      const idempotencyKey = `idemp_wa_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      const payload = {
+        shippingAddress: {
+          recipientName: recipientName.trim(),
+          phone: phone.trim(),
+          streetLine1: streetLine1.trim(),
+          streetLine2: streetLine2 ? streetLine2.trim() : undefined,
+          city: city.trim(),
+          state: state.trim(),
+          postalCode: postalCode.trim(),
+          country: country || 'India'
+        },
+        customerNotes: customerNotes
+          ? `[WhatsApp Build Consultation] ${customerNotes.trim()}`
+          : '[WhatsApp Build Consultation] Driver requested professional consultation for custom rig configuration.',
+        idempotencyKey
+      };
+
+      const res = await orderApi.createOrder(payload);
+      const newOrder = res.data.order;
+      setPlacedOrder(newOrder);
+      setWhatsappOrder(newOrder);
+      onClearCart?.();
+
+      // 3. Compile rich formatted WhatsApp message
+      const technicianPhone = import.meta.env.VITE_WHATSAPP_NUMBER || '917902482052';
+      const itemsListText = items.map((it, idx) => `  ${idx + 1}. *${it.name}* (x${it.qty}) — ${fmt(it.price * it.qty)}`).join('\n');
+
+      const waMessage = [
+        `🏎️ *SLIDESCOIETY SIM RACING — CUSTOM BUILD INQUIRY*`,
+        `━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+        `📋 *Order Reference:* #${newOrder.orderNumber}`,
+        `👤 *Driver Name:* ${recipientName.trim()}`,
+        `📞 *Contact Phone:* ${phone.trim()}`,
+        `📧 *Driver Email:* ${user.email || accountEmail}`,
+        `📍 *Delivery Location:* ${city.trim()}, ${state.trim()} - ${postalCode.trim()}, ${country || 'India'}`,
+        `🏠 *Street Address:* ${streetLine1.trim()}${streetLine2 ? ', ' + streetLine2.trim() : ''}`,
+        `━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+        `🛠️ *CONFIGURED RIG COMPONENTS (${items.length} items):*`,
+        itemsListText,
+        `━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+        `💰 *PRICING SUMMARY:*`,
+        `• Subtotal: ${fmt(subtotal)}`,
+        `• GST (18% included): ${fmt(tax)}`,
+        `• Express Logistics: ${shipping === 0 ? 'FREE' : fmt(shipping)}`,
+        `• *Grand Total: ${fmt(total)}*`,
+        customerNotes ? `\n📝 *Driver Notes / Rig Specs:*\n"${customerNotes.trim()}"` : '',
+        `━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+        `💬 *Inquiry Message:*`,
+        `Hi Slidescoiety Engineering Team! I have configured my custom sim racing setup and registered Order #${newOrder.orderNumber} on the store. I would like to consult with a technician to finalize the build process, verify wheelbase torque compatibility, and schedule dispatch.`
+      ].filter(Boolean).join('\n');
+
+      const fullWaUrl = `https://wa.me/${technicianPhone}?text=${encodeURIComponent(waMessage)}`;
+      setWhatsappUrl(fullWaUrl);
+
+      // 4. Open WhatsApp
+      window.open(fullWaUrl, '_blank');
+
+      // 5. Transition drawer to WhatsApp confirmation view
+      setStep('whatsapp_confirmation');
+      onShowToast?.(`Order ${newOrder.orderNumber} registered! Opening WhatsApp...`);
+    } catch (err) {
+      setError(err.message || 'Failed to initialize WhatsApp consultation. Please check your information and try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Place Order handler with idempotency and backend price validation
@@ -119,18 +272,21 @@ export default function CartDrawer({
     setLoading(true);
 
     try {
+      // Ensure driver account is created or active
+      const user = await ensureDriverAccount();
+
       const idempotencyKey = `idemp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
       const payload = {
         shippingAddress: {
-          recipientName,
-          phone,
-          streetLine1,
-          streetLine2,
-          city,
-          state,
-          postalCode,
-          country
+          recipientName: recipientName.trim(),
+          phone: phone.trim(),
+          streetLine1: streetLine1.trim(),
+          streetLine2: streetLine2 ? streetLine2.trim() : undefined,
+          city: city.trim(),
+          state: state.trim(),
+          postalCode: postalCode.trim(),
+          country: country || 'India'
         },
         customerNotes,
         idempotencyKey
@@ -252,6 +408,16 @@ export default function CartDrawer({
         {/* Drawer Header */}
         <div className="p-4 sm:p-6 border-b border-white/10 flex items-center justify-between">
           <div className="flex items-center gap-3">
+            {step === 'whatsapp_confirmation' && (
+              <button
+                type="button"
+                onClick={handleClose}
+                className="p-1 rounded-full text-neutral-400 hover:text-white hover:bg-white/10 transition-colors mr-1"
+                aria-label="Back to Store"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+            )}
             {step === 'checkout' && (
               <button
                 type="button"
@@ -266,6 +432,8 @@ export default function CartDrawer({
             <h3 className="font-display font-black text-2xl uppercase tracking-tight text-white">
               {step === 'confirmation'
                 ? 'Order Confirmed & Paid'
+                : step === 'whatsapp_confirmation'
+                ? 'Technician Consultation'
                 : step === 'payment'
                 ? 'Payment & Gateway'
                 : step === 'checkout'
@@ -380,9 +548,9 @@ export default function CartDrawer({
                 </div>
 
                 {!currentUser && (
-                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 flex items-center gap-2">
-                    <User className="w-4 h-4 text-amber-400 shrink-0" />
-                    <span>Driver account required to complete order.</span>
+                  <div className="p-3 rounded-xl bg-neutral-900 border border-white/10 text-xs text-neutral-300 flex items-center gap-2">
+                    <User className="w-4 h-4 text-[#e50914] shrink-0" />
+                    <span>Your Driver Account will be created on checkout for build tracking.</span>
                   </div>
                 )}
 
@@ -391,7 +559,7 @@ export default function CartDrawer({
                   onClick={handleProceedToCheckout}
                   className="w-full py-3.5 rounded-full bg-[#e50914] hover:bg-[#ff1f2d] text-white font-bold text-xs uppercase tracking-wider transition-all shadow-xl shadow-[#e50914]/30 flex items-center justify-center gap-2"
                 >
-                  <span>{currentUser ? 'Proceed to Delivery & Checkout' : 'Sign In to Checkout'}</span>
+                  <span>Proceed to Delivery & Checkout</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
@@ -412,16 +580,81 @@ export default function CartDrawer({
                 </div>
               )}
 
-              {/* Order Notice Banner */}
-              <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/30 text-xs text-blue-200 space-y-1">
+              {/* Consultation & Gateway Info Banner */}
+              <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-200 space-y-1">
                 <div className="flex items-center gap-1.5 font-bold">
-                  <ShieldCheck className="w-4 h-4 text-blue-400" />
-                  <span>Phase 3B Razorpay Payment Gateway</span>
+                  <MessageCircle className="w-4 h-4 text-[#25D366] fill-[#25D366]" />
+                  <span className="text-white">Custom Build Support & Finalization</span>
                 </div>
-                <p className="text-[11px] text-blue-300 leading-relaxed">
-                  Your order will be created and directed to secure Razorpay checkout supporting UPI, dynamic QR, cards, and netbanking.
+                <p className="text-[11px] text-emerald-300/80 leading-relaxed">
+                  Finalize your order directly with our technician on WhatsApp or pay online with instant payment via Razorpay.
                 </p>
               </div>
+
+              {/* Driver Account Information */}
+              {currentUser ? (
+                <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-[#e50914]/20 border border-[#e50914]/40 flex items-center justify-center text-[#e50914]">
+                      <User className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                        <span>{currentUser.fullName}</span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      </div>
+                      <div className="text-[10px] font-mono text-neutral-400">{currentUser.email}</div>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                    Active Driver
+                  </span>
+                </div>
+              ) : (
+                <div className="p-4 rounded-xl bg-gradient-to-br from-[#181818] to-black border border-[#e50914]/30 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs font-bold text-white uppercase tracking-wider font-mono">
+                      <User className="w-4 h-4 text-[#e50914]" />
+                      <span>Driver Account Setup</span>
+                    </div>
+                    <span className="text-[10px] text-emerald-400 font-mono font-bold bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                      Auto-Registered
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-neutral-400 leading-snug">
+                    Enter your email and create a password to set up your Slidescoiety Driver Account so this build, orders, and technician updates are saved directly to your profile.
+                  </p>
+                  <div className="grid grid-cols-2 gap-3 pt-1">
+                    <div className="col-span-2 sm:col-span-1">
+                      <label className="block text-[11px] font-mono uppercase text-neutral-400 mb-1">
+                        Driver Email *
+                      </label>
+                      <input
+                        type="email"
+                        required={!currentUser}
+                        value={accountEmail}
+                        onChange={(e) => setAccountEmail(e.target.value)}
+                        placeholder="driver@example.com"
+                        className="w-full bg-black/60 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-[#e50914]"
+                      />
+                    </div>
+                    <div className="col-span-2 sm:col-span-1">
+                      <label className="block text-[11px] font-mono uppercase text-neutral-400 mb-1">
+                        Create Password *
+                      </label>
+                      <input
+                        type="password"
+                        required={!currentUser}
+                        minLength={8}
+                        value={accountPassword}
+                        onChange={(e) => setAccountPassword(e.target.value)}
+                        placeholder="8+ letters & numbers"
+                        className="w-full bg-black/60 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-[#e50914]"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Delivery Details */}
               <div className="space-y-4">
@@ -579,19 +812,46 @@ export default function CartDrawer({
                 </div>
               </div>
 
+              {/* Primary: WhatsApp Consultation & Finalization Button */}
+              <button
+                type="button"
+                onClick={handleWhatsAppCheckout}
+                disabled={loading}
+                className="w-full py-3.5 rounded-full bg-[#25D366] hover:bg-[#20ba59] text-black font-black text-xs uppercase tracking-wider transition-all shadow-xl shadow-[#25D366]/30 flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-black" />
+                    <span>Registering Build & Connecting to WhatsApp...</span>
+                  </>
+                ) : (
+                  <>
+                    <MessageCircle className="w-4 h-4 text-black fill-black" />
+                    <span>Consult Technician & Finalize via WhatsApp</span>
+                  </>
+                )}
+              </button>
+
+              <div className="flex items-center gap-3 my-1">
+                <div className="flex-1 h-px bg-white/10" />
+                <span className="text-[10px] font-mono uppercase text-neutral-400">or pay directly online</span>
+                <div className="flex-1 h-px bg-white/10" />
+              </div>
+
+              {/* Secondary: Direct Razorpay Checkout */}
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3.5 rounded-full bg-[#e50914] hover:bg-[#ff1f2d] text-white font-bold text-xs uppercase tracking-wider transition-all shadow-xl shadow-[#e50914]/30 flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full py-3 rounded-full bg-white/10 hover:bg-white/15 text-white font-bold text-xs uppercase tracking-wider transition-all border border-white/20 flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Registering Order & Launching Gateway...</span>
+                    <span>Processing Order...</span>
                   </>
                 ) : (
                   <>
-                    <CreditCard className="w-4 h-4" />
+                    <CreditCard className="w-4 h-4 text-[#e50914]" />
                     <span>Confirm Order & Pay with Razorpay</span>
                   </>
                 )}
@@ -792,6 +1052,85 @@ export default function CartDrawer({
                 className="w-full py-3 rounded-full text-xs font-bold text-neutral-400 hover:text-white border border-white/10 hover:bg-white/5 transition-all"
               >
                 Continue Exploring Cockpits
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ======================================================== */}
+        {/* STEP 5: WHATSAPP CONSULTATION CONFIRMATION               */}
+        {/* ======================================================== */}
+        {step === 'whatsapp_confirmation' && whatsappOrder && (
+          <div className="flex-1 flex flex-col p-6 overflow-y-auto space-y-6 text-center">
+            <div className="pt-6 space-y-3">
+              <div className="w-16 h-16 rounded-full bg-[#25D366]/20 border border-[#25D366]/40 flex items-center justify-center mx-auto text-[#25D366]">
+                <MessageCircle className="w-8 h-8 fill-[#25D366]" />
+              </div>
+              <div className="inline-block px-3 py-1 rounded-full bg-[#25D366]/15 border border-[#25D366]/30 text-[#25D366] text-xs font-mono font-bold uppercase tracking-wider">
+                WhatsApp Consultation Opened
+              </div>
+              <h4 className="font-display font-black text-2xl uppercase tracking-tight text-white">
+                Order #{whatsappOrder.orderNumber} Registered!
+              </h4>
+              <p className="text-xs text-neutral-300 max-w-sm mx-auto leading-relaxed">
+                Your custom sim racing rig configuration has been saved to your Slidescoiety Driver Account. All hardware specifications have been prepared for our technician on WhatsApp.
+              </p>
+            </div>
+
+            {/* Order Details Card */}
+            <div className="p-4 rounded-2xl bg-black/50 border border-white/10 text-left space-y-3 font-mono text-xs">
+              <div className="flex justify-between items-center pb-2.5 border-b border-white/10">
+                <span className="text-neutral-400">Order Reference</span>
+                <span className="text-[#e50914] font-bold text-sm">{whatsappOrder.orderNumber}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-neutral-400">Driver</span>
+                <span className="text-white font-bold">{recipientName}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-neutral-400">Phone</span>
+                <span className="text-white">{phone}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-neutral-400">Destination</span>
+                <span className="text-white">{city}, {state} ({postalCode})</span>
+              </div>
+              <div className="flex justify-between items-center pt-2 border-t border-white/10 font-bold">
+                <span className="text-neutral-300">Grand Total</span>
+                <span className="text-white text-sm text-[#e50914]">{fmt(total)}</span>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="pt-2 space-y-3">
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-3.5 rounded-full bg-[#25D366] hover:bg-[#20ba59] text-black font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#25D366]/30 hover:scale-[1.01]"
+              >
+                <MessageCircle className="w-4 h-4 fill-black" />
+                <span>Re-Open WhatsApp Chat</span>
+              </a>
+
+              <button
+                type="button"
+                onClick={() => {
+                  handleClose();
+                  onViewOrders?.();
+                }}
+                className="w-full py-3 rounded-full bg-white/10 hover:bg-white/15 text-white font-bold text-xs uppercase tracking-wider transition-all border border-white/15 flex items-center justify-center gap-2"
+              >
+                <Package className="w-4 h-4" />
+                <span>View Order in My Account</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleClose}
+                className="w-full py-2.5 text-xs text-neutral-400 hover:text-white transition-colors"
+              >
+                Continue Browsing
               </button>
             </div>
           </div>

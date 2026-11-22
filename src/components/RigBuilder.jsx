@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { stages, byId, fmt } from '../data/products';
-import { Check, ArrowLeft, ArrowRight, Download, ShoppingCart, AlertCircle } from 'lucide-react';
+import { Check, ArrowLeft, ArrowRight, Download, ShoppingCart, AlertCircle, MessageCircle } from 'lucide-react';
 
 export default function RigBuilder({ onAddToCart, onShowToast }) {
   const [step, setStep] = useState(0);
@@ -39,6 +39,27 @@ export default function RigBuilder({ onAddToCart, onShowToast }) {
 
   // Check if frame selected
   const hasFrame = ['frame-x', 'frame-p', 'frame-s'].some((id) => build[id]);
+
+  // Connect with Technician on WhatsApp
+  const handleConsultWhatsApp = () => {
+    const technicianPhone = import.meta.env.VITE_WHATSAPP_NUMBER || '917902482052';
+    const text = [
+      `🏎️ *SLIDESCOIETY COCKPIT CONFIGURATION: ${buildName.toUpperCase()}*`,
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+      `📅 *Date:* ${new Date().toLocaleDateString()}`,
+      `🛠️ *Configured Components (${selectedItems.length} items):*`,
+      ...selectedItems.map((p, idx) => `  ${idx + 1}. *${p.name}* (${p.cat}) — ${fmt(p.price)}`),
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+      `💰 *Estimated Build Total:* ${fmt(total)}`,
+      ``,
+      `💬 *Inquiry Message:*`,
+      `Hi Slidescoiety Engineering Team! I have configured this custom sim racing setup (${buildName}) on the interactive builder. I would like to consult with a professional technician regarding direct-drive wheelbase torque, pedal angle rigidity, custom bracket mounting, and completing the order process.`
+    ].join('\n');
+
+    const waUrl = `https://wa.me/${technicianPhone}?text=${encodeURIComponent(text)}`;
+    window.open(waUrl, '_blank');
+    onShowToast?.('Opening WhatsApp to connect with our sim racing technician...');
+  };
 
   // Download summary text
   const handleExport = () => {
@@ -142,6 +163,15 @@ export default function RigBuilder({ onAddToCart, onShowToast }) {
                 >
                   <Download className="w-4 h-4" />
                   <span>Download Spec Sheet</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConsultWhatsApp}
+                  disabled={!hasFrame}
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#25D366] hover:bg-[#20ba59] text-black font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-[#25D366]/30 font-mono disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <MessageCircle className="w-4 h-4 fill-black" />
+                  <span>Discuss with Technician on WhatsApp</span>
                 </button>
                 <button
                   type="button"
@@ -292,6 +322,20 @@ export default function RigBuilder({ onAddToCart, onShowToast }) {
           >
             <ShoppingCart className="w-4 h-4" />
             <span>Add Configured Rig to Cart</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleConsultWhatsApp}
+            disabled={!hasFrame}
+            className={`w-full mt-2.5 py-3 rounded-full font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all border ${
+              hasFrame
+                ? 'bg-[#25D366]/15 hover:bg-[#25D366] text-[#25D366] hover:text-black border-[#25D366]/40 shadow-md shadow-[#25D366]/20'
+                : 'bg-transparent text-neutral-600 border-neutral-800 cursor-not-allowed'
+            }`}
+          >
+            <MessageCircle className="w-4 h-4" />
+            <span>Consult Technician on WhatsApp</span>
           </button>
         </div>
 

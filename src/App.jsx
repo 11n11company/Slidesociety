@@ -308,6 +308,7 @@ export default function App() {
         onClearCart={() => setCart({})}
         onShowToast={showToast}
         currentUser={currentUser}
+        onAuthSuccess={handleAuthSuccess}
         onOpenAccount={() => {
           setAccountInitialTab('login');
           setAccountOpen(true);
