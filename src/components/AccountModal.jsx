@@ -1227,7 +1227,7 @@ export default function AccountModal({
                             loading="lazy"
                             decoding="async"
                             onError={(e) => { e.currentTarget.src = '/hero-backdrop-hd.jpg'; }}
-                            className="w-12 h-12 object-cover rounded-lg bg-black shrink-0 border border-white/10"
+                            className="w-12 h-12 object-contain object-center rounded-lg bg-black shrink-0 border border-white/10 p-0.5"
                           />
                           <div className="flex-1 min-w-0">
                             <h5 className="font-bold text-xs text-white truncate">{it.productName}</h5>
@@ -1431,7 +1431,7 @@ export default function AccountModal({
                               <img
                                 src={imgSrc}
                                 alt={prod.name}
-                                className="w-16 h-16 rounded-xl object-cover bg-neutral-900 border border-white/10 shrink-0"
+                                className="w-16 h-16 rounded-xl object-contain object-center bg-neutral-900 border border-white/10 shrink-0 p-1"
                                 loading="lazy"
                                 decoding="async"
                                 onError={(e) => { e.currentTarget.src = '/hero-backdrop-hd.jpg'; }}

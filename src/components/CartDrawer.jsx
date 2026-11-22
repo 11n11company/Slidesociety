@@ -484,7 +484,7 @@ export default function CartDrawer({
                       loading="lazy"
                       decoding="async"
                       onError={(e) => { e.currentTarget.src = '/hero-backdrop-hd.jpg'; }}
-                      className="w-16 h-16 object-cover rounded-lg bg-black shrink-0 border border-white/10"
+                      className="w-16 h-16 object-contain object-center rounded-lg bg-black shrink-0 border border-white/10 p-1"
                     />
                     <div className="flex-1 min-w-0">
                       <h4 className="font-bold text-white text-sm line-clamp-1">{item.name}</h4>

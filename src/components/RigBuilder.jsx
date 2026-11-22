@@ -210,14 +210,14 @@ export default function RigBuilder({ onAddToCart, onShowToast }) {
                         : 'border-white/10 bg-black/40 hover:border-white/30'
                     }`}
                   >
-                    <div className="aspect-video rounded-lg overflow-hidden mb-3 bg-black">
+                    <div className="aspect-video rounded-lg overflow-hidden mb-3 bg-black/60 border border-white/5 flex items-center justify-center p-2">
                       <img
                         src={item.image || item.imageUrl || '/hero-backdrop-hd.jpg'}
                         alt={item.name}
                         loading="lazy"
                         decoding="async"
                         onError={(e) => { e.currentTarget.src = '/hero-backdrop-hd.jpg'; }}
-                        className="w-full h-full object-cover brightness-90 hover:brightness-100 transition-all"
+                        className="w-full h-full object-contain object-center transition-all"
                       />
                     </div>
                     <div className="flex items-start justify-between gap-2 mb-1">

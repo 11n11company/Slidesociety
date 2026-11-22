@@ -45,6 +45,7 @@ export default function AdminProducts({ currentUser }) {
   const [stockQuantity, setStockQuantity] = useState('20');
   const [specDescription, setSpecDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [imageMeta, setImageMeta] = useState(null);
   const [isAvailable, setIsAvailable] = useState(true);
 
   // Deactivate / Delete Confirmation State
@@ -93,6 +94,7 @@ export default function AdminProducts({ currentUser }) {
     setStockQuantity('20');
     setSpecDescription('');
     setImageUrl('/hero-backdrop-hd.jpg');
+    setImageMeta(null);
     setIsAvailable(true);
     setFormError('');
     setShowModal(true);
@@ -110,6 +112,7 @@ export default function AdminProducts({ currentUser }) {
     setStockQuantity(String(p.stockQuantity !== undefined ? p.stockQuantity : 20));
     setSpecDescription(p.specDescription || p.description || '');
     setImageUrl(p.imageUrl || '/hero-backdrop-hd.jpg');
+    setImageMeta(null);
     setIsAvailable(Boolean(p.isAvailable));
     setFormError('');
     setShowModal(true);
@@ -120,8 +123,9 @@ export default function AdminProducts({ currentUser }) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      setFormError('Please select a valid image file (PNG, JPG, WEBP, etc.).');
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'];
+    if (!validTypes.includes(file.type) && !file.type.startsWith('image/')) {
+      setFormError('Unsupported format. Please upload a PNG, JPG, JPEG, WEBP, or GIF image.');
       return;
     }
 
@@ -135,7 +139,19 @@ export default function AdminProducts({ currentUser }) {
     const reader = new FileReader();
     reader.onload = (event) => {
       if (event.target?.result) {
-        setImageUrl(event.target.result);
+        const result = event.target.result;
+        setImageUrl(result);
+
+        // Read original image dimensions without any destructive downsampling or cropping
+        const tempImg = new window.Image();
+        tempImg.onload = () => {
+          setImageMeta({
+            width: tempImg.naturalWidth,
+            height: tempImg.naturalHeight,
+            ratio: (tempImg.naturalWidth / tempImg.naturalHeight).toFixed(3)
+          });
+        };
+        tempImg.src = result;
       }
     };
     reader.onerror = () => {
@@ -379,7 +395,7 @@ export default function AdminProducts({ currentUser }) {
                         <img
                           src={prod.imageUrl || '/hero-backdrop-hd.jpg'}
                           alt={prod.name}
-                          className="w-10 h-10 rounded-lg object-cover bg-neutral-900 border border-white/10 shrink-0"
+                          className="w-10 h-10 rounded-lg object-contain object-center bg-neutral-900 border border-white/10 shrink-0 p-0.5"
                           onError={(e) => {
                             e.target.src = '/hero-backdrop-hd.jpg';
                           }}
@@ -587,12 +603,21 @@ export default function AdminProducts({ currentUser }) {
                 </label>
 
                 {/* Live Photo Preview Box */}
-                <div className="mb-2 relative rounded-xl overflow-hidden border border-white/10 bg-black/40 h-36 flex items-center justify-center">
+                <div className="mb-2 relative rounded-xl overflow-hidden border border-white/10 bg-black/60 h-48 flex items-center justify-center p-2">
                   {imageUrl ? (
                     <img
                       src={imageUrl}
                       alt="Product preview"
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain object-center"
+                      onLoad={(e) => {
+                        if (e.target.naturalWidth && e.target.naturalHeight) {
+                          setImageMeta({
+                            width: e.target.naturalWidth,
+                            height: e.target.naturalHeight,
+                            ratio: (e.target.naturalWidth / e.target.naturalHeight).toFixed(3)
+                          });
+                        }
+                      }}
                       onError={(e) => {
                         e.currentTarget.onerror = null;
                         e.currentTarget.src = '/hero-backdrop-hd.jpg';
@@ -605,10 +630,19 @@ export default function AdminProducts({ currentUser }) {
                     </div>
                   )}
 
+                  {imageUrl && imageMeta && (
+                    <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-black/80 backdrop-blur-md border border-white/15 font-mono text-[10px] text-neutral-300 pointer-events-none">
+                      {imageMeta.width} × {imageMeta.height} px ({imageMeta.ratio}:1)
+                    </span>
+                  )}
+
                   {imageUrl && (
                     <button
                       type="button"
-                      onClick={() => setImageUrl('')}
+                      onClick={() => {
+                        setImageUrl('');
+                        setImageMeta(null);
+                      }}
                       className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/75 hover:bg-red-950/90 text-white/80 hover:text-red-400 border border-white/10 transition-colors"
                       title="Clear photo"
                     >

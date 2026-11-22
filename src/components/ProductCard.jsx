@@ -12,11 +12,11 @@ function ProductCard({
   return (
     <article className="group bg-[#111111] border border-white/[0.08] hover:border-[#e50914] rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-[#e50914]/15 flex flex-col">
       {/* Product Image Stage */}
-      <div className="relative aspect-[4/3] bg-[#161616] overflow-hidden">
+      <div className="relative aspect-[4/3] bg-[#161616] overflow-hidden flex items-center justify-center p-2.5">
         <img
-          src={product.image}
+          src={product.image || product.imageUrl || '/hero-backdrop-hd.jpg'}
           alt={product.name}
-          className="w-full h-full object-cover brightness-90 group-hover:brightness-100 group-hover:scale-105 transition-all duration-500"
+          className="w-full h-full object-contain object-center transition-all duration-500 group-hover:scale-105"
           loading="lazy"
           decoding="async"
           onError={(e) => {
@@ -24,7 +24,7 @@ function ProductCard({
             e.currentTarget.src = '/hero-backdrop-hd.jpg';
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#111111] via-transparent to-transparent opacity-60 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent pointer-events-none opacity-30" />
 
         {/* Wishlist Button */}
         <button

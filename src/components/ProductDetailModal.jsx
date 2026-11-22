@@ -247,7 +247,7 @@ export default function ProductDetailModal({
           {/* ======================================================== */}
           <div className="grid md:grid-cols-2 gap-6 sm:gap-8 items-start">
             {/* Product Image Stage */}
-            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-[#161616] border border-white/10 group">
+            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-[#161616] border border-white/10 flex items-center justify-center p-3 sm:p-4 group">
               <img
                 src={product.image || product.imageUrl || '/hero-backdrop-hd.jpg'}
                 alt={product.name}
@@ -257,9 +257,9 @@ export default function ProductDetailModal({
                   e.currentTarget.onerror = null;
                   e.currentTarget.src = '/hero-backdrop-hd.jpg';
                 }}
-                className="w-full h-full object-cover brightness-95 group-hover:scale-105 transition-all duration-500"
+                className="w-full h-full object-contain object-center transition-all duration-500 group-hover:scale-105"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-20 pointer-events-none" />
 
               <span className="absolute bottom-3 left-3 px-3 py-1 rounded-md bg-black/70 backdrop-blur-md border border-white/10 font-mono text-[10px] uppercase tracking-wider text-neutral-300 pointer-events-none">
                 {product.cat}

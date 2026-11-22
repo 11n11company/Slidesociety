@@ -222,7 +222,7 @@ export default function AdminReviews({ currentUser }) {
                     <img
                       src={rev.product.imageUrl}
                       alt={rev.product.name}
-                      className="w-12 h-12 rounded-xl object-cover bg-neutral-900 border border-white/10 shrink-0"
+                      className="w-12 h-12 rounded-xl object-contain object-center bg-neutral-900 border border-white/10 shrink-0 p-0.5"
                     />
                   )}
                   <div className="min-w-0">
