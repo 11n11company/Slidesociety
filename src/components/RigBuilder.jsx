@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { stages, byId, fmt } from '../data/products';
 import { Check, ArrowLeft, ArrowRight, Download, ShoppingCart, AlertCircle, MessageCircle } from 'lucide-react';
 
 export default function RigBuilder({ onAddToCart, onShowToast }) {
   const [step, setStep] = useState(0);
+  const [, setCatalogTick] = useState(0);
   const [build, setBuild] = useState({
     'frame-x': true,
     'seat-lite': true,
@@ -11,6 +12,13 @@ export default function RigBuilder({ onAddToCart, onShowToast }) {
     'pedals-pro': true
   });
   const [buildName, setBuildName] = useState('Apex Championship GT3');
+
+  // React to catalog updates in real-time
+  useEffect(() => {
+    const handleUpdated = () => setCatalogTick((t) => t + 1);
+    window.addEventListener('slidescoiety:products-updated', handleUpdated);
+    return () => window.removeEventListener('slidescoiety:products-updated', handleUpdated);
+  }, []);
 
   const currentStage = stages[step];
 
@@ -204,7 +212,7 @@ export default function RigBuilder({ onAddToCart, onShowToast }) {
                   >
                     <div className="aspect-video rounded-lg overflow-hidden mb-3 bg-black">
                       <img
-                        src={item.image}
+                        src={item.image || item.imageUrl || '/hero-backdrop-hd.jpg'}
                         alt={item.name}
                         loading="lazy"
                         decoding="async"

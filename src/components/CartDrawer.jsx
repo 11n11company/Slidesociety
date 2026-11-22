@@ -49,6 +49,14 @@ export default function CartDrawer({
   const [qrCodeData, setQrCodeData] = useState(null);
   const [whatsappOrder, setWhatsappOrder] = useState(null);
   const [whatsappUrl, setWhatsappUrl] = useState('');
+  const [, setCatalogTick] = useState(0);
+
+  // React to catalog updates in real-time
+  React.useEffect(() => {
+    const handleUpdated = () => setCatalogTick((t) => t + 1);
+    window.addEventListener('slidescoiety:products-updated', handleUpdated);
+    return () => window.removeEventListener('slidescoiety:products-updated', handleUpdated);
+  }, []);
 
   // Guest Account Creation Fields
   const [accountEmail, setAccountEmail] = useState('');
@@ -471,7 +479,7 @@ export default function CartDrawer({
                     className="flex gap-4 p-4 rounded-xl bg-black/40 border border-white/5"
                   >
                     <img
-                      src={item.image || '/hero-backdrop-hd.jpg'}
+                      src={item.image || item.imageUrl || '/hero-backdrop-hd.jpg'}
                       alt={item.name}
                       loading="lazy"
                       decoding="async"

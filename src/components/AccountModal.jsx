@@ -81,6 +81,14 @@ export default function AccountModal({
   // Wishlist State
   const [wishlistItems, setWishlistItems] = useState([]);
   const [wishlistLoading, setWishlistLoading] = useState(false);
+  const [, setCatalogTick] = useState(0);
+
+  // React to catalog updates in real-time
+  useEffect(() => {
+    const handleUpdated = () => setCatalogTick((t) => t + 1);
+    window.addEventListener('slidescoiety:products-updated', handleUpdated);
+    return () => window.removeEventListener('slidescoiety:products-updated', handleUpdated);
+  }, []);
 
   // Status Badge Mapper
   const getStatusBadge = (status) => {

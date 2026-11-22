@@ -13,10 +13,11 @@ import {
   Eye,
   EyeOff,
   Image,
-  DollarSign
+  DollarSign,
+  Upload
 } from 'lucide-react';
 import { adminApi } from '../services/adminApi';
-import { fmt } from '../data/products';
+import { fmt, updateSingleLiveProduct } from '../data/products';
 
 export default function AdminProducts({ currentUser }) {
   const [products, setProducts] = useState([]);
@@ -114,6 +115,35 @@ export default function AdminProducts({ currentUser }) {
     setShowModal(true);
   };
 
+  // Handle Direct Image File Upload from device
+  const handleImageFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setFormError('Please select a valid image file (PNG, JPG, WEBP, etc.).');
+      return;
+    }
+
+    // Limit to 5MB to ensure snappy updates and safe payload sizes
+    if (file.size > 5 * 1024 * 1024) {
+      setFormError('Image size exceeds 5MB limit. Please choose a smaller image.');
+      return;
+    }
+
+    setFormError('');
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        setImageUrl(event.target.result);
+      }
+    };
+    reader.onerror = () => {
+      setFormError('Failed to read image file from device.');
+    };
+    reader.readAsDataURL(file);
+  };
+
   // Handle Form Submission
   const handleFormSubmit = async (e) => {
     e.preventDefault();
@@ -136,15 +166,16 @@ export default function AdminProducts({ currentUser }) {
       return;
     }
     if (!imageUrl.trim()) {
-      setFormError('Product image URL is required.');
+      setFormError('Product image URL or file is required.');
       return;
     }
 
     setFormLoading(true);
 
     try {
+      let savedProduct = null;
       if (isEditing) {
-        await adminApi.updateProduct(editingId, {
+        const res = await adminApi.updateProduct(editingId, {
           name: name.trim(),
           category: category.trim(),
           priceInr: numPrice,
@@ -153,13 +184,23 @@ export default function AdminProducts({ currentUser }) {
           imageUrl: imageUrl.trim(),
           isAvailable
         });
+        savedProduct = res?.data?.product || {
+          id: editingId,
+          name: name.trim(),
+          category: category.trim(),
+          priceInr: numPrice,
+          stockQuantity: numStock,
+          specDescription: specDescription.trim(),
+          imageUrl: imageUrl.trim(),
+          isAvailable
+        };
         setSuccessMsg(`Product '${name}' updated successfully.`);
       } else {
         const cleanSlug = id.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
         if (!cleanSlug) {
           throw new Error('Please enter a valid product identifier slug.');
         }
-        await adminApi.createProduct({
+        const res = await adminApi.createProduct({
           id: cleanSlug,
           name: name.trim(),
           category: category.trim(),
@@ -169,7 +210,25 @@ export default function AdminProducts({ currentUser }) {
           imageUrl: imageUrl.trim(),
           isAvailable
         });
+        savedProduct = res?.data?.product || {
+          id: cleanSlug,
+          name: name.trim(),
+          category: category.trim(),
+          priceInr: numPrice,
+          stockQuantity: numStock,
+          specDescription: specDescription.trim(),
+          imageUrl: imageUrl.trim(),
+          isAvailable
+        };
         setSuccessMsg(`New product '${name}' created successfully.`);
+      }
+
+      // Immediately propagate updated product to live memory and dispatch global event
+      if (savedProduct) {
+        updateSingleLiveProduct(savedProduct);
+        window.dispatchEvent(
+          new CustomEvent('slidescoiety:products-updated', { detail: savedProduct })
+        );
       }
 
       setShowModal(false);
@@ -190,6 +249,14 @@ export default function AdminProducts({ currentUser }) {
     try {
       const res = await adminApi.deleteProduct(productToDelete.id);
       setSuccessMsg(res.message || `Product '${productToDelete.name}' processed successfully.`);
+      
+      // Notify active storefront views
+      window.dispatchEvent(
+        new CustomEvent('slidescoiety:products-updated', {
+          detail: { id: productToDelete.id, isAvailable: false }
+        })
+      );
+
       setProductToDelete(null);
       loadProducts(pagination.page);
     } catch (err) {
@@ -516,16 +583,69 @@ export default function AdminProducts({ currentUser }) {
 
               <div>
                 <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
-                  Product Image URL
+                  Product Image / Photo
                 </label>
-                <input
-                  type="text"
-                  required
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="https://... or /hero-backdrop-hd.jpg"
-                  className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-[#e50914]"
-                />
+
+                {/* Live Photo Preview Box */}
+                <div className="mb-2 relative rounded-xl overflow-hidden border border-white/10 bg-black/40 h-36 flex items-center justify-center">
+                  {imageUrl ? (
+                    <img
+                      src={imageUrl}
+                      alt="Product preview"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = '/hero-backdrop-hd.jpg';
+                      }}
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center text-neutral-500 gap-1.5">
+                      <Image className="w-8 h-8 opacity-40" />
+                      <span className="text-[11px] font-mono">No photo selected</span>
+                    </div>
+                  )}
+
+                  {imageUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setImageUrl('')}
+                      className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/75 hover:bg-red-950/90 text-white/80 hover:text-red-400 border border-white/10 transition-colors"
+                      title="Clear photo"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Upload from Device or Paste URL Controls */}
+                <div className="space-y-2">
+                  <div>
+                    <label className="cursor-pointer flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-xs font-mono font-bold text-white transition-all shadow-sm">
+                      <Upload className="w-3.5 h-3.5 text-[#e50914]" />
+                      <span>Upload Photo from Device (PNG / JPG / WEBP)</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleImageFileUpload}
+                      />
+                    </label>
+                  </div>
+
+                  <div>
+                    <label className="block text-[9px] font-mono uppercase text-neutral-400 mb-0.5">
+                      Or Direct Image URL / Path
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={imageUrl}
+                      onChange={(e) => setImageUrl(e.target.value)}
+                      placeholder="https://... or /hero-backdrop-hd.jpg"
+                      className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-[#e50914]"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div>

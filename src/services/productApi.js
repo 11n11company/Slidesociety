@@ -1,4 +1,10 @@
-import { products as localProducts, categories as localCategories } from '../data/products';
+import {
+  products as localProducts,
+  categories as localCategories,
+  setLiveProducts,
+  updateSingleLiveProduct,
+  byId
+} from '../data/products';
 
 const API_BASE = '/api/v1';
 
@@ -75,6 +81,8 @@ export const productApi = {
       const json = await res.json();
       if (json && json.success && json.data) {
         const rawProducts = json.data.products || [];
+        // Hydrate live products map for global reactive sync
+        setLiveProducts(rawProducts);
         return {
           products: rawProducts.map(normalizeProduct),
           count: json.data.count ?? rawProducts.length,
@@ -151,5 +159,27 @@ export const productApi = {
       console.warn('Categories API fetch failed, utilizing client-side fallback:', err.message);
     }
     return localCategories;
+  },
+
+  /**
+   * Fetches a single product by ID and synchronizes it into live in-memory registry.
+   */
+  async getProductById(id) {
+    if (!id) return null;
+    try {
+      const res = await fetch(`${API_BASE}/products/${id}`);
+      if (res.ok) {
+        const json = await res.json();
+        const p = json?.data?.product || json?.data;
+        if (p) {
+          const normalized = normalizeProduct(p);
+          updateSingleLiveProduct(normalized);
+          return normalized;
+        }
+      }
+    } catch (err) {
+      console.warn(`Product API getProductById(${id}) failed:`, err.message);
+    }
+    return byId(id);
   }
 };

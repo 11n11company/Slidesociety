@@ -15,6 +15,7 @@ import {
   MessageSquare
 } from 'lucide-react';
 import { reviewApi } from '../services/reviewApi';
+import { productApi } from '../services/productApi';
 import { fmt, byId } from '../data/products';
 
 export default function ProductDetailModal({
@@ -42,7 +43,33 @@ export default function ProductDetailModal({
   const [formTitle, setFormTitle] = useState('');
   const [formComment, setFormComment] = useState('');
 
-  const product = productId ? byId(productId) : null;
+  // Live product data state ensuring updated photos reflect immediately
+  const [liveProduct, setLiveProduct] = useState(() => (productId ? byId(productId) : null));
+
+  // Sync live product from API whenever modal opens or productId changes
+  useEffect(() => {
+    if (productId && isOpen) {
+      setLiveProduct(byId(productId));
+      productApi.getProductById(productId)
+        .then((p) => {
+          if (p) setLiveProduct(p);
+        })
+        .catch(() => {});
+    }
+  }, [productId, isOpen]);
+
+  // Real-time listener for admin photo/product updates
+  useEffect(() => {
+    const handleProductUpdated = (e) => {
+      if (e.detail && e.detail.id === productId) {
+        setLiveProduct((prev) => ({ ...prev, ...e.detail }));
+      }
+    };
+    window.addEventListener('slidescoiety:products-updated', handleProductUpdated);
+    return () => window.removeEventListener('slidescoiety:products-updated', handleProductUpdated);
+  }, [productId]);
+
+  const product = liveProduct || (productId ? byId(productId) : null);
   const isWishlisted = productId ? wishlist.includes(productId) : false;
 
   // Load reviews whenever modal opens or productId changes
@@ -222,7 +249,7 @@ export default function ProductDetailModal({
             {/* Product Image Stage */}
             <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-[#161616] border border-white/10 group">
               <img
-                src={product.image}
+                src={product.image || product.imageUrl || '/hero-backdrop-hd.jpg'}
                 alt={product.name}
                 loading="lazy"
                 decoding="async"

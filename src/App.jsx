@@ -8,9 +8,10 @@ import WatchSetupModal from './components/WatchSetupModal';
 import AccountModal from './components/AccountModal';
 import ProductDetailModal from './components/ProductDetailModal';
 import Footer from './components/Footer';
-import { products, byId } from './data/products';
+import { products, byId, updateSingleLiveProduct } from './data/products';
 import { authApi } from './services/authApi';
 import { wishlistApi } from './services/wishlistApi';
+import { productApi } from './services/productApi';
 
 // Code-split Admin Dashboard to reduce initial storefront bundle size
 const AdminApp = React.lazy(() => import('./admin/AdminApp'));
@@ -29,6 +30,7 @@ export default function App() {
   const [selectedProductDetailId, setSelectedProductDetailId] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
+  const [catalogVersion, setCatalogVersion] = useState(0);
 
   // Synchronize admin routing with browser URL and history
   useEffect(() => {
@@ -37,6 +39,24 @@ export default function App() {
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Hydrate catalog from database on mount & listen for real-time admin product updates
+  useEffect(() => {
+    // Initial catalog hydration from database
+    productApi.getProducts().catch((err) => console.warn('Catalog hydration notice:', err?.message));
+
+    const handleCatalogUpdate = (e) => {
+      if (e.detail) {
+        updateSingleLiveProduct(e.detail);
+      }
+      // Re-fetch products from server to keep everything perfectly synchronized
+      productApi.getProducts().catch(() => {});
+      setCatalogVersion((v) => v + 1);
+    };
+
+    window.addEventListener('slidescoiety:products-updated', handleCatalogUpdate);
+    return () => window.removeEventListener('slidescoiety:products-updated', handleCatalogUpdate);
   }, []);
 
   // Check existing session on mount & sync wishlist
@@ -220,6 +240,8 @@ export default function App() {
 
             {/* Featured Hardware Grid */}
             <FeaturedGrid
+              key={`home-grid-${catalogVersion}`}
+              catalogVersion={catalogVersion}
               onAddToCart={handleAddToCart}
               wishlist={wishlist}
               onToggleWishlist={handleToggleWishlist}
@@ -275,6 +297,8 @@ export default function App() {
 
         {currentView === 'shop' && (
           <FeaturedGrid
+            key={`shop-grid-${catalogVersion}`}
+            catalogVersion={catalogVersion}
             onAddToCart={handleAddToCart}
             wishlist={wishlist}
             onToggleWishlist={handleToggleWishlist}
@@ -290,6 +314,8 @@ export default function App() {
 
         {currentView === 'builder' && (
           <RigBuilder
+            key={`builder-${catalogVersion}`}
+            catalogVersion={catalogVersion}
             onAddToCart={handleAddToCart}
             onShowToast={showToast}
           />
@@ -301,6 +327,8 @@ export default function App() {
 
       {/* Modals & Drawers */}
       <CartDrawer
+        key={`cart-${catalogVersion}`}
+        catalogVersion={catalogVersion}
         isOpen={cartOpen}
         onClose={() => setCartOpen(false)}
         cart={cart}
@@ -340,6 +368,8 @@ export default function App() {
       />
 
       <ProductDetailModal
+        key={`detail-${selectedProductDetailId}-${catalogVersion}`}
+        catalogVersion={catalogVersion}
         productId={selectedProductDetailId}
         isOpen={Boolean(selectedProductDetailId)}
         onClose={() => setSelectedProductDetailId(null)}

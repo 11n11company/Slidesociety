@@ -263,4 +263,80 @@ export const gallery = [
 ];
 
 export const fmt = (n) => '₹' + Number(n).toLocaleString('en-IN');
-export const byId = (id) => products.find(p => p.id === id);
+
+// Dynamic in-memory live catalog initialized with baseline products
+export const liveProductMap = new Map();
+
+products.forEach((p) => {
+  liveProductMap.set(p.id, { ...p });
+});
+
+/**
+ * Hydrates or batch updates the live product catalog from database response.
+ */
+export function setLiveProducts(list) {
+  if (!Array.isArray(list)) return;
+  list.forEach((item) => {
+    if (!item || !item.id) return;
+    const existing = liveProductMap.get(item.id) || {};
+    const priceNum = typeof item.priceInr === 'number'
+      ? item.priceInr
+      : (typeof item.price === 'number' ? item.price : existing.price || 0);
+
+    liveProductMap.set(item.id, {
+      ...existing,
+      ...item,
+      image: item.imageUrl || item.image || existing.image || '/hero-backdrop-hd.jpg',
+      imageUrl: item.imageUrl || item.image || existing.imageUrl || '/hero-backdrop-hd.jpg',
+      price: priceNum,
+      priceInr: priceNum,
+      cat: item.category || item.cat || existing.cat || 'General',
+      category: item.category || item.cat || existing.category || 'General',
+      spec: item.specDescription || item.spec || existing.spec || '',
+      specDescription: item.specDescription || item.spec || existing.specDescription || ''
+    });
+  });
+}
+
+/**
+ * Synchronizes a single updated or newly created product into the live catalog.
+ */
+export function updateSingleLiveProduct(item) {
+  if (!item || !item.id) return null;
+  const existing = liveProductMap.get(item.id) || {};
+  const priceNum = typeof item.priceInr === 'number'
+    ? item.priceInr
+    : (typeof item.price === 'number' ? item.price : existing.price || 0);
+
+  const updated = {
+    ...existing,
+    ...item,
+    image: item.imageUrl || item.image || existing.image || '/hero-backdrop-hd.jpg',
+    imageUrl: item.imageUrl || item.image || existing.imageUrl || '/hero-backdrop-hd.jpg',
+    price: priceNum,
+    priceInr: priceNum,
+    cat: item.category || item.cat || existing.cat || 'General',
+    category: item.category || item.cat || existing.category || 'General',
+    spec: item.specDescription || item.spec || existing.spec || '',
+    specDescription: item.specDescription || item.spec || existing.specDescription || ''
+  };
+
+  liveProductMap.set(item.id, updated);
+  return updated;
+}
+
+/**
+ * Returns all current live products as an array.
+ */
+export function getAllLiveProducts() {
+  return Array.from(liveProductMap.values());
+}
+
+/**
+ * Resolves a product by ID, checking the live dynamic registry first.
+ */
+export const byId = (id) => {
+  if (!id) return null;
+  return liveProductMap.get(id) || products.find((p) => p.id === id) || null;
+};
+

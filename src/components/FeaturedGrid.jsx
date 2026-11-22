@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import ProductCard from './ProductCard';
-import { categories as fallbackCategories, products as localProducts } from '../data/products';
+import {
+  categories as fallbackCategories,
+  products as localProducts,
+  getAllLiveProducts
+} from '../data/products';
 import { productApi } from '../services/productApi';
 import { ArrowRight, SlidersHorizontal, Search, X, RotateCcw, Filter } from 'lucide-react';
 
@@ -81,15 +85,28 @@ export default function FeaturedGrid({
         if (!isCancelled) setLoading(false);
       });
 
+    // Re-fetch instantly when an admin updates or uploads a product photo
+    const handleProductsUpdated = () => {
+      productApi.getProducts(params).then((res) => {
+        if (!isCancelled && res?.products) {
+          setServerProducts(res.products);
+        }
+      }).catch(() => {});
+    };
+
+    window.addEventListener('slidescoiety:products-updated', handleProductsUpdated);
+
     return () => {
       isCancelled = true;
+      window.removeEventListener('slidescoiety:products-updated', handleProductsUpdated);
     };
   }, [selectedCategory, debouncedSearch, minPrice, maxPrice, sortBy]);
 
   // Determine active products list
   const activeProducts = useMemo(() => {
     if (serverProducts) return serverProducts;
-    return localProducts;
+    const live = getAllLiveProducts();
+    return live && live.length > 0 ? live : localProducts;
   }, [serverProducts]);
 
   // Items to display: top 6 starting grid items for home view, full filtered list for shop view
