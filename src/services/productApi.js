@@ -33,6 +33,8 @@ export function normalizeProduct(p) {
   };
 }
 
+let cachedCategories = null;
+
 export const productApi = {
   /**
    * Fetches products with optional search, category, price range, sorting, and pagination.
@@ -130,15 +132,19 @@ export const productApi = {
   },
 
   /**
-   * Fetches distinct categories.
+   * Fetches distinct categories with in-memory caching to prevent duplicate network calls.
    */
   async getCategories() {
+    if (cachedCategories && cachedCategories.length > 0) {
+      return cachedCategories;
+    }
     try {
       const res = await fetch(`${API_BASE}/categories`);
       if (res.ok) {
         const json = await res.json();
         if (json && json.success && Array.isArray(json.data) && json.data.length > 0) {
-          return json.data;
+          cachedCategories = json.data;
+          return cachedCategories;
         }
       }
     } catch (err) {

@@ -90,6 +90,7 @@ export async function getProduct(req, res, next) {
 export async function getCategories(req, res, next) {
   try {
     const categories = await getAllCategories();
+    res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
     return ApiResponse.success(res, categories, 'Categories retrieved successfully');
   } catch (error) {
     next(error);

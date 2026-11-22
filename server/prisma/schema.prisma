@@ -143,6 +143,8 @@ model Product {
 
   @@index([category])
   @@index([isAvailable])
+  @@index([priceInr])
+  @@index([rating])
 }
 
 model ProductVariant {
@@ -220,6 +222,7 @@ model Order {
   reviews                 ProductReview[]
 
   @@index([userId])
+  @@index([userId, createdAt])
   @@index([orderNumber])
   @@index([status])
   @@index([createdAt])
@@ -369,6 +372,7 @@ model StockReservation {
   @@index([productId])
   @@index([status])
   @@index([expiresAt])
+  @@index([status, expiresAt])
 }
 
 model Shipment {
@@ -446,6 +450,7 @@ model ProductReview {
   @@index([userId])
   @@index([orderId])
   @@index([status])
+  @@index([productId, status])
 }
 
 

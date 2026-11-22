@@ -2,7 +2,7 @@ import React from 'react';
 import { Star, Heart, ShoppingCart, Plus } from 'lucide-react';
 import { fmt } from '../data/products';
 
-export default function ProductCard({
+function ProductCard({
   product,
   onAddToCart,
   isWishlisted,
@@ -104,4 +104,6 @@ export default function ProductCard({
     </article>
   );
 }
+
+export default React.memo(ProductCard);
 

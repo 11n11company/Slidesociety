@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import FeaturedGrid from './components/FeaturedGrid';
@@ -11,7 +11,9 @@ import Footer from './components/Footer';
 import { products, byId } from './data/products';
 import { authApi } from './services/authApi';
 import { wishlistApi } from './services/wishlistApi';
-import AdminApp from './admin/AdminApp';
+
+// Code-split Admin Dashboard to reduce initial storefront bundle size
+const AdminApp = React.lazy(() => import('./admin/AdminApp'));
 
 export default function App() {
   const [currentView, setCurrentView] = useState('home');
@@ -108,24 +110,24 @@ export default function App() {
   };
 
   // Navigation router
-  const handleNavigate = (view, category = 'All') => {
+  const handleNavigate = useCallback((view, category = 'All') => {
     setCurrentView(view);
     setSelectedCategory(category);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }, []);
 
   // Add to cart
-  const handleAddToCart = (id, qty = 1) => {
+  const handleAddToCart = useCallback((id, qty = 1) => {
     setCart((prev) => ({
       ...prev,
       [id]: (prev[id] || 0) + qty
     }));
     const item = byId(id);
     showToast(`${item ? item.name : 'Item'} added to cart`);
-  };
+  }, []);
 
   // Update cart quantity
-  const handleUpdateQty = (id, delta) => {
+  const handleUpdateQty = useCallback((id, delta) => {
     setCart((prev) => {
       const next = { ...prev };
       const newQty = (next[id] || 0) + delta;
@@ -136,7 +138,7 @@ export default function App() {
       }
       return next;
     });
-  };
+  }, []);
 
   // Toggle wishlist (with backend sync for authenticated drivers)
   const handleToggleWishlist = async (id) => {
@@ -163,13 +165,22 @@ export default function App() {
   // If URL route is under /admin, render dedicated Admin Application
   if (adminMode) {
     return (
-      <AdminApp
-        onExitAdmin={() => {
-          window.history.pushState(null, '', '/');
-          setAdminMode(false);
-          setCurrentView('home');
-        }}
-      />
+      <React.Suspense
+        fallback={
+          <div className="min-h-screen bg-[#070707] flex items-center justify-center text-neutral-400 font-mono text-xs">
+            <span className="w-2 h-2 rounded-full bg-[#e50914] animate-ping mr-3" />
+            Loading Control Panel...
+          </div>
+        }
+      >
+        <AdminApp
+          onExitAdmin={() => {
+            window.history.pushState(null, '', '/');
+            setAdminMode(false);
+            setCurrentView('home');
+          }}
+        />
+      </React.Suspense>
     );
   }
 
