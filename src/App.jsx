@@ -20,8 +20,8 @@ export default function App() {
   const [currentView, setCurrentView] = useState('home');
   const [adminMode, setAdminMode] = useState(() => window.location.pathname.startsWith('/admin'));
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [cart, setCart] = useState({ 'frame-x': 1, 'pedals-pro': 1 }); // 2 items as in mockup
-  const [wishlist, setWishlist] = useState(['wheel']);
+  const [cart, setCart] = useState({});
+  const [wishlist, setWishlist] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [watchSetupOpen, setWatchSetupOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);

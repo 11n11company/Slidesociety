@@ -1,17 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { stages, byId, fmt } from '../data/products';
+import React, { useState, useEffect, useMemo } from 'react';
+import { stages, byId, fmt, getAllLiveProducts } from '../data/products';
 import { Check, ArrowLeft, ArrowRight, Download, ShoppingCart, AlertCircle, MessageCircle } from 'lucide-react';
 
 export default function RigBuilder({ onAddToCart, onShowToast }) {
   const [step, setStep] = useState(0);
-  const [, setCatalogTick] = useState(0);
-  const [build, setBuild] = useState({
-    'frame-x': true,
-    'seat-lite': true,
-    'wheel': true,
-    'pedals-pro': true
-  });
-  const [buildName, setBuildName] = useState('Apex Championship GT3');
+  const [catalogTick, setCatalogTick] = useState(0);
+  const [build, setBuild] = useState({});
+  const [buildName, setBuildName] = useState('Custom Sim Rig');
 
   // React to catalog updates in real-time
   useEffect(() => {
@@ -22,13 +17,37 @@ export default function RigBuilder({ onAddToCart, onShowToast }) {
 
   const currentStage = stages[step];
 
+  // Resolve products for current stage dynamically
+  const stageProducts = useMemo(() => {
+    if (!currentStage) return [];
+    const all = getAllLiveProducts();
+    if (currentStage.ids && currentStage.ids.length > 0) {
+      const byIds = currentStage.ids.map((id) => byId(id)).filter(Boolean);
+      if (byIds.length > 0) return byIds;
+    }
+    if (currentStage.category) {
+      return all.filter(
+        (p) =>
+          (p.category || p.cat || '').toLowerCase() === currentStage.category.toLowerCase()
+      );
+    }
+    if (currentStage.categories && currentStage.categories.length > 0) {
+      const cats = currentStage.categories.map((c) => c.toLowerCase());
+      return all.filter((p) => cats.includes((p.category || p.cat || '').toLowerCase()));
+    }
+    return [];
+  }, [currentStage, catalogTick]);
+
   // Toggle or select component
   const handleToggle = (id, multi) => {
     setBuild((prev) => {
       const next = { ...prev };
       if (!multi) {
-        currentStage.ids.forEach((x) => delete next[x]);
-        next[id] = true;
+        stageProducts.forEach((p) => {
+          if (p.id !== id) delete next[p.id];
+        });
+        if (next[id]) delete next[id];
+        else next[id] = true;
       } else {
         if (next[id]) delete next[id];
         else next[id] = true;
@@ -45,8 +64,8 @@ export default function RigBuilder({ onAddToCart, onShowToast }) {
 
   const total = selectedItems.reduce((acc, p) => acc + p.price, 0);
 
-  // Check if frame selected
-  const hasFrame = ['frame-x', 'frame-p', 'frame-s'].some((id) => build[id]);
+  // Check if components are selected
+  const hasFrame = selectedItems.length > 0;
 
   // Connect with Technician on WhatsApp
   const handleConsultWhatsApp = () => {
@@ -194,48 +213,59 @@ export default function RigBuilder({ onAddToCart, onShowToast }) {
             </div>
           ) : (
             /* Component Selection Grid */
-            <div className="grid sm:grid-cols-2 gap-4">
-              {currentStage.ids.map((id) => {
-                const item = byId(id);
-                if (!item) return null;
-                const isSelected = !!build[id];
+            <>
+              <div className="grid sm:grid-cols-2 gap-4">
+                {stageProducts.map((item) => {
+                  const isSelected = !!build[item.id];
 
-                return (
-                  <div
-                    key={id}
-                    onClick={() => handleToggle(id, currentStage.multi)}
-                    className={`cursor-pointer rounded-xl border p-4 transition-all ${
-                      isSelected
-                        ? 'border-[#e50914] bg-[#e50914]/10 shadow-lg shadow-[#e50914]/15'
-                        : 'border-white/10 bg-black/40 hover:border-white/30'
-                    }`}
-                  >
-                    <div className="aspect-video rounded-lg overflow-hidden mb-3 bg-black/60 border border-white/5 flex items-center justify-center p-2">
-                      <img
-                        src={item.image || item.imageUrl || '/hero-backdrop-hd.jpg'}
-                        alt={item.name}
-                        loading="lazy"
-                        decoding="async"
-                        onError={(e) => { e.currentTarget.src = '/hero-backdrop-hd.jpg'; }}
-                        className="w-full h-full object-contain object-center transition-all"
-                      />
+                  return (
+                    <div
+                      key={item.id}
+                      onClick={() => handleToggle(item.id, currentStage.multi)}
+                      className={`cursor-pointer rounded-xl border p-4 transition-all ${
+                        isSelected
+                          ? 'border-[#e50914] bg-[#e50914]/10 shadow-lg shadow-[#e50914]/15'
+                          : 'border-white/10 bg-black/40 hover:border-white/30'
+                      }`}
+                    >
+                      <div className="aspect-video rounded-lg overflow-hidden mb-3 bg-black/60 border border-white/5 flex items-center justify-center p-2">
+                        <img
+                          src={item.image || item.imageUrl || '/hero-backdrop-hd.jpg'}
+                          alt={item.name}
+                          loading="lazy"
+                          decoding="async"
+                          onError={(e) => { e.currentTarget.src = '/hero-backdrop-hd.jpg'; }}
+                          className="w-full h-full object-contain object-center transition-all"
+                        />
+                      </div>
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <h4 className="font-bold text-white text-sm tracking-tight">{item.name}</h4>
+                        {isSelected && (
+                          <span className="p-1 rounded-full bg-[#e50914] text-white shrink-0">
+                            <Check className="w-3 h-3" />
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs font-mono text-[#e50914] font-bold mb-2">
+                        {fmt(item.price)}
+                      </p>
+                      <p className="text-[11px] text-neutral-400 line-clamp-2">{item.spec || item.specDescription}</p>
                     </div>
-                    <div className="flex items-start justify-between gap-2 mb-1">
-                      <h4 className="font-bold text-white text-sm tracking-tight">{item.name}</h4>
-                      {isSelected && (
-                        <span className="p-1 rounded-full bg-[#e50914] text-white shrink-0">
-                          <Check className="w-3 h-3" />
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs font-mono text-[#e50914] font-bold mb-2">
-                      {fmt(item.price)}
-                    </p>
-                    <p className="text-[11px] text-neutral-400 line-clamp-2">{item.spec}</p>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+
+              {stageProducts.length === 0 && (
+                <div className="p-8 rounded-2xl bg-black/40 border border-white/10 text-center space-y-2">
+                  <p className="text-xs font-mono text-neutral-300">
+                    No hardware configured yet for <strong className="text-white">{currentStage.name}</strong>.
+                  </p>
+                  <p className="text-[11px] text-neutral-500">
+                    Add new products in the Admin Portal under category "{currentStage.category || currentStage.categories?.join(', ')}" and they will appear here dynamically.
+                  </p>
+                </div>
+              )}
+            </>
           )}
 
           {/* Stepper Navigation Buttons */}
