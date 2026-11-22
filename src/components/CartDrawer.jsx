@@ -579,7 +579,7 @@ export default function CartDrawer({
         {/* STEP 2: CHECKOUT & DELIVERY ADDRESS FORM                 */}
         {/* ======================================================== */}
         {step === 'checkout' && (
-          <form onSubmit={handlePlaceOrder} className="flex-1 flex flex-col overflow-hidden">
+          <form onSubmit={handleWhatsAppCheckout} className="flex-1 flex flex-col overflow-hidden">
             <div className="flex-1 overflow-y-auto p-6 space-y-5">
               {error && (
                 <div className="p-3.5 rounded-xl bg-red-500/15 border border-red-500/40 text-xs text-red-200 flex items-start gap-2.5">
@@ -588,14 +588,14 @@ export default function CartDrawer({
                 </div>
               )}
 
-              {/* Consultation & Gateway Info Banner */}
+              {/* Consultation & Assisted Checkout Info Banner */}
               <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-200 space-y-1">
                 <div className="flex items-center gap-1.5 font-bold">
                   <MessageCircle className="w-4 h-4 text-[#25D366] fill-[#25D366]" />
-                  <span className="text-white">Custom Build Support & Finalization</span>
+                  <span className="text-white">Assisted Custom Build Order & WhatsApp Consultation</span>
                 </div>
                 <p className="text-[11px] text-emerald-300/80 leading-relaxed">
-                  Finalize your order directly with our technician on WhatsApp or pay online with instant payment via Razorpay.
+                  Submitting your order saves your build enquiry in our system and directly connects you with our engineering technician on WhatsApp to finalize hardware details, freight logistics, and payment.
                 </p>
               </div>
 
@@ -820,47 +820,21 @@ export default function CartDrawer({
                 </div>
               </div>
 
-              {/* Primary: WhatsApp Consultation & Finalization Button */}
+              {/* Primary: Assisted WhatsApp Order & Finalization Button */}
               <button
-                type="button"
-                onClick={handleWhatsAppCheckout}
+                type="submit"
                 disabled={loading}
-                className="w-full py-3.5 rounded-full bg-[#25D366] hover:bg-[#20ba59] text-black font-black text-xs uppercase tracking-wider transition-all shadow-xl shadow-[#25D366]/30 flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50"
+                className="w-full py-4 rounded-full bg-[#25D366] hover:bg-[#20ba59] text-black font-black text-xs uppercase tracking-wider transition-all shadow-xl shadow-[#25D366]/30 flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50"
               >
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin text-black" />
-                    <span>Registering Build & Connecting to WhatsApp...</span>
+                    <span>Registering Order & Connecting to WhatsApp...</span>
                   </>
                 ) : (
                   <>
                     <MessageCircle className="w-4 h-4 text-black fill-black" />
-                    <span>Consult Technician & Finalize via WhatsApp</span>
-                  </>
-                )}
-              </button>
-
-              <div className="flex items-center gap-3 my-1">
-                <div className="flex-1 h-px bg-white/10" />
-                <span className="text-[10px] font-mono uppercase text-neutral-400">or pay directly online</span>
-                <div className="flex-1 h-px bg-white/10" />
-              </div>
-
-              {/* Secondary: Direct Razorpay Checkout */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3 rounded-full bg-white/10 hover:bg-white/15 text-white font-bold text-xs uppercase tracking-wider transition-all border border-white/20 flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Processing Order...</span>
-                  </>
-                ) : (
-                  <>
-                    <CreditCard className="w-4 h-4 text-[#e50914]" />
-                    <span>Confirm Order & Pay with Razorpay</span>
+                    <span>CONFIRM ORDER & CONNECT VIA WHATSAPP</span>
                   </>
                 )}
               </button>

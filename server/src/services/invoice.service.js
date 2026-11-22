@@ -301,7 +301,7 @@ export async function renderInvoicePDFBuffer({ invoiceNumber, order, payment, us
  * Strictly verifies payment status, prevents duplicates under concurrency,
  * safely stores the PDF, and initiates email notifications.
  */
-export async function createInvoiceForOrder({ orderId, triggerSource = 'checkout' }) {
+export async function createInvoiceForOrder({ orderId, triggerSource = 'checkout', forceRegenerate = false }) {
   if (!orderId) {
     throw new Error('orderId is required to generate invoice');
   }
@@ -326,8 +326,8 @@ export async function createInvoiceForOrder({ orderId, triggerSource = 'checkout
     throw error;
   }
 
-  // 2. Concurrency & Idempotency: Return existing invoice if already created
-  if (order.invoice) {
+  // 2. Concurrency & Idempotency: Return existing invoice if already created and regeneration is not requested
+  if (order.invoice && !forceRegenerate) {
     logger.info(`Invoice [${order.invoice.invoiceNumber}] already exists for Order [${order.orderNumber}]. Reusing.`);
     return {
       success: true,
@@ -358,8 +358,10 @@ export async function createInvoiceForOrder({ orderId, triggerSource = 'checkout
     };
   }
 
-  // 5. Generate Collision-Resistant Invoice Number
-  const invoiceNumber = await generateUniqueInvoiceNumber();
+  // 5. Generate Collision-Resistant Invoice Number (or reuse existing on forced regeneration)
+  const invoiceNumber = (order.invoice && forceRegenerate)
+    ? order.invoice.invoiceNumber
+    : await generateUniqueInvoiceNumber();
 
   // 6. Render PDF Buffer using Immutable Order Snapshots
   let pdfBuffer;
@@ -383,14 +385,12 @@ export async function createInvoiceForOrder({ orderId, triggerSource = 'checkout
   const filename = `${invoiceNumber}.pdf`;
   const storageResult = await storageService.saveInvoicePDF(filename, pdfBuffer);
 
-  // 8. Transactionally Record Invoice in PostgreSQL
+  // 8. Transactionally Record or Update Invoice in PostgreSQL
   let createdInvoice;
-  try {
-    createdInvoice = await prisma.invoice.create({
+  if (order.invoice && forceRegenerate) {
+    createdInvoice = await prisma.invoice.update({
+      where: { id: order.invoice.id },
       data: {
-        orderId: order.id,
-        invoiceNumber,
-        userId: order.userId,
         subtotal: order.subtotal,
         discountAmount: order.discountAmount,
         taxAmount: order.taxAmount,
@@ -401,7 +401,6 @@ export async function createInvoiceForOrder({ orderId, triggerSource = 'checkout
         pdfPath: storageResult.filePath,
         pdfUrl: `/api/v1/invoices/${invoiceNumber}/download`,
         status: 'GENERATED',
-        emailStatus: 'PENDING',
         taxBreakdown: JSON.stringify({
           taxRate: 18,
           cgstRate: 9,
@@ -412,22 +411,51 @@ export async function createInvoiceForOrder({ orderId, triggerSource = 'checkout
         })
       }
     });
-  } catch (dbErr) {
-    // If concurrent insert race occurred on unique(orderId), fetch existing invoice
-    if (dbErr.code === 'P2002') {
-      logger.info(`Concurrent invoice insertion detected for Order [${order.orderNumber}]. Retrieving existing record.`);
-      const existing = await prisma.invoice.findUnique({
-        where: { orderId: order.id }
+  } else {
+    try {
+      createdInvoice = await prisma.invoice.create({
+        data: {
+          orderId: order.id,
+          invoiceNumber,
+          userId: order.userId,
+          subtotal: order.subtotal,
+          discountAmount: order.discountAmount,
+          taxAmount: order.taxAmount,
+          shippingAmount: order.shippingAmount,
+          totalAmount: order.totalAmount,
+          currency: order.currency || 'INR',
+          storageKey: storageResult.storageKey,
+          pdfPath: storageResult.filePath,
+          pdfUrl: `/api/v1/invoices/${invoiceNumber}/download`,
+          status: 'GENERATED',
+          emailStatus: 'PENDING',
+          taxBreakdown: JSON.stringify({
+            taxRate: 18,
+            cgstRate: 9,
+            sgstRate: 9,
+            cgstAmount: (Number(order.taxAmount) / 2).toFixed(2),
+            sgstAmount: (Number(order.taxAmount) / 2).toFixed(2),
+            totalTax: Number(order.taxAmount).toFixed(2)
+          })
+        }
       });
-      if (existing) {
-        return {
-          success: true,
-          isExisting: true,
-          invoice: existing
-        };
+    } catch (dbErr) {
+      // If concurrent insert race occurred on unique(orderId), fetch existing invoice
+      if (dbErr.code === 'P2002') {
+        logger.info(`Concurrent invoice insertion detected for Order [${order.orderNumber}]. Retrieving existing record.`);
+        const existing = await prisma.invoice.findUnique({
+          where: { orderId: order.id }
+        });
+        if (existing) {
+          return {
+            success: true,
+            isExisting: true,
+            invoice: existing
+          };
+        }
       }
+      throw dbErr;
     }
-    throw dbErr;
   }
 
   logger.info(`Invoice [${invoiceNumber}] successfully generated and stored for Order [${order.orderNumber}]. Trigger: [${triggerSource}]`);

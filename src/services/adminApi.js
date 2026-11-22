@@ -101,6 +101,63 @@ export const adminApi = {
   },
 
   /**
+   * Modify items, shipping fare, and optional discount for an order
+   * PATCH /api/v1/admin/orders/:id/fare-and-items
+   */
+  async updateOrderFareAndItems(orderId, { items, shippingAmount, discountAmount, notes }) {
+    const res = await fetch(`${ADMIN_BASE}/orders/${orderId}/fare-and-items`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      credentials: 'include',
+      body: JSON.stringify({ items, shippingAmount, discountAmount, notes })
+    });
+    return handleResponse(res);
+  },
+
+  /**
+   * Record payment (UPI, Bank Transfer, Cash, Card, Manual) & confirm order
+   * POST /api/v1/admin/orders/:id/payment
+   */
+  async recordOrderPayment(orderId, { amount, method, transactionReference, notes, autoConfirm = true }) {
+    const res = await fetch(`${ADMIN_BASE}/orders/${orderId}/payment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      credentials: 'include',
+      body: JSON.stringify({ amount, method, transactionReference, notes, autoConfirm })
+    });
+    return handleResponse(res);
+  },
+
+  /**
+   * Generate or force-regenerate tax invoice for an order
+   * POST /api/v1/admin/orders/:id/invoice
+   */
+  async generateOrderInvoice(orderId) {
+    const res = await fetch(`${ADMIN_BASE}/orders/${orderId}/invoice`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      credentials: 'include'
+    });
+    return handleResponse(res);
+  },
+
+  /**
+   * Re-send invoice via email
+   */
+  async resendInvoice(invoiceId) {
+    return invoiceApi.resendInvoice(invoiceId);
+  },
+
+  /**
    * List catalog products with stock and metadata
    * GET /api/v1/admin/products
    */

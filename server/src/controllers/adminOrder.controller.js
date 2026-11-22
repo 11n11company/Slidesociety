@@ -2,7 +2,10 @@ import {
   getAdminOrders,
   getAdminOrderById,
   updateOrderStatusByAdmin,
-  updateOrderStatusSchema
+  updateOrderStatusSchema,
+  updateOrderFareAndItems as modifyOrderFareAndItems,
+  recordOrderPaymentByAdmin as recordPaymentService,
+  generateAdminInvoice as generateInvoiceService
 } from '../services/order.service.js';
 
 /**
@@ -94,6 +97,105 @@ export async function updateStatus(req, res, next) {
         }
       });
     }
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({
+        success: false,
+        error: {
+          code: err.code || 'BAD_REQUEST',
+          message: err.message
+        }
+      });
+    }
+    next(err);
+  }
+}
+
+/**
+ * Admin: Update items and fare for an order
+ * PATCH /api/v1/admin/orders/:id/fare-and-items
+ */
+export async function updateFareAndItems(req, res, next) {
+  try {
+    const { items, shippingAmount, discountAmount, notes } = req.body;
+    const updatedOrder = await modifyOrderFareAndItems(req.params.id, {
+      items,
+      shippingAmount,
+      discountAmount,
+      notes,
+      adminUserId: req.user.id
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Order items and fare successfully updated.',
+      data: {
+        order: updatedOrder
+      }
+    });
+  } catch (err) {
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({
+        success: false,
+        error: {
+          code: err.code || 'BAD_REQUEST',
+          message: err.message
+        }
+      });
+    }
+    next(err);
+  }
+}
+
+/**
+ * Admin: Record payment & confirm order
+ * POST /api/v1/admin/orders/:id/payment
+ */
+export async function recordPayment(req, res, next) {
+  try {
+    const { amount, method, transactionReference, notes, autoConfirm } = req.body;
+    const updatedOrder = await recordPaymentService(req.params.id, {
+      amount,
+      method,
+      transactionReference,
+      notes,
+      autoConfirm: autoConfirm !== false,
+      adminUserId: req.user.id
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Payment successfully recorded and order updated.',
+      data: {
+        order: updatedOrder
+      }
+    });
+  } catch (err) {
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({
+        success: false,
+        error: {
+          code: err.code || 'BAD_REQUEST',
+          message: err.message
+        }
+      });
+    }
+    next(err);
+  }
+}
+
+/**
+ * Admin: Generate or regenerate tax invoice for order
+ * POST /api/v1/admin/orders/:id/invoice
+ */
+export async function generateInvoiceForOrder(req, res, next) {
+  try {
+    const result = await generateInvoiceService(req.params.id);
+    return res.status(200).json({
+      success: true,
+      message: 'Tax invoice successfully generated.',
+      data: result
+    });
+  } catch (err) {
     if (err.statusCode) {
       return res.status(err.statusCode).json({
         success: false,

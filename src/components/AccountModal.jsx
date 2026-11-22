@@ -28,7 +28,8 @@ import {
   ExternalLink,
   Heart,
   ShoppingCart,
-  Trash2
+  Trash2,
+  MessageCircle
 } from 'lucide-react';
 import { authApi } from '../services/authApi';
 import { orderApi } from '../services/orderApi';
@@ -886,39 +887,42 @@ export default function AccountModal({
                     );
                   })()}
 
-                  {/* Payment Action Banner for Unpaid PENDING Orders */}
+                  {/* Status Banner for PENDING Custom Build Enquiries */}
                   {selectedOrder.status === 'PENDING' && (
-                    <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-3 text-left">
+                    <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-left">
                       <div>
                         <div className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-                          <CreditCard className="w-4 h-4 text-amber-400" />
-                          <span>Payment Awaiting Completion</span>
+                          <Clock className="w-4 h-4 text-amber-400" />
+                          <span>Order &amp; Custom Build Enquiry Submitted</span>
                         </div>
                         <div className="text-[11px] text-neutral-400 mt-0.5">
-                          Pay securely via Razorpay (UPI, Cards, QR, Netbanking) to initiate fabrication.
+                          Your rig specs and delivery location are under review with our engineering technician. Contact us on WhatsApp to finalize freight and payment.
                         </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handlePayOrder(selectedOrder)}
-                        disabled={payingOrder}
-                        className="px-4 py-2 rounded-xl bg-[#e50914] hover:bg-[#ff1f2d] text-white text-xs font-bold transition-all shadow-md shadow-[#e50914]/40 flex items-center gap-1.5 shrink-0 disabled:opacity-50"
+                      <a
+                        href={`https://wa.me/${import.meta.env.VITE_WHATSAPP_NUMBER || '917902482052'}?text=${encodeURIComponent(`Hi Slidescoiety! Checking status of my custom build enquiry #${selectedOrder.orderNumber} (${selectedOrder.user?.fullName || ''}).`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-2 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-black text-xs font-bold transition-all shadow-md shadow-[#25D366]/30 flex items-center gap-1.5 shrink-0"
                       >
-                        {payingOrder ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          <RotateCcw className="w-3.5 h-3.5" />
-                        )}
-                        <span>Pay {fmt(Number(selectedOrder.totalAmount))}</span>
-                      </button>
+                        <MessageCircle className="w-3.5 h-3.5 fill-black" />
+                        <span>Chat on WhatsApp</span>
+                      </a>
                     </div>
                   )}
 
                   {/* Payment Confirmed Banner for Paid Orders */}
                   {selectedOrder.status !== 'PENDING' && selectedOrder.status !== 'CANCELLED' && (
-                    <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center gap-2 text-xs text-emerald-300">
-                      <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-                      <span>Payment Verified & Captured via Razorpay Gateway</span>
+                    <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between text-xs text-emerald-300">
+                      <div className="flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <span>Payment Confirmed &amp; Verified</span>
+                      </div>
+                      {selectedOrder.payments?.[0]?.method && (
+                        <span className="font-mono text-[10px] uppercase font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded">
+                          {selectedOrder.payments[0].method}
+                        </span>
+                      )}
                     </div>
                   )}
 

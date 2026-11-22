@@ -15,7 +15,14 @@ import {
   ShieldAlert,
   ChevronLeft,
   ChevronRight,
-  Download
+  Download,
+  Plus,
+  Minus,
+  Trash2,
+  Edit3,
+  MessageCircle,
+  Send,
+  Check
 } from 'lucide-react';
 import { adminApi } from '../services/adminApi';
 import { fmt } from '../data/products';
@@ -103,6 +110,41 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
 
   const isSupport = currentUser?.role === 'SUPPORT';
 
+  // Catalog products for item addition
+  const [catalogProducts, setCatalogProducts] = useState([]);
+
+  // Fare & Items editing state
+  const [isEditingFareAndItems, setIsEditingFareAndItems] = useState(false);
+  const [editItems, setEditItems] = useState([]);
+  const [editShipping, setEditShipping] = useState(0);
+  const [editDiscount, setEditDiscount] = useState(0);
+  const [savingFareAndItems, setSavingFareAndItems] = useState(false);
+  const [fareAndItemsError, setFareAndItemsError] = useState('');
+  const [fareAndItemsSuccess, setFareAndItemsSuccess] = useState('');
+  const [selectedProductToAdd, setSelectedProductToAdd] = useState('');
+
+  // Payment Recording State
+  const [payMethod, setPayMethod] = useState('UPI');
+  const [payAmount, setPayAmount] = useState('');
+  const [payRef, setPayRef] = useState('');
+  const [payNotes, setPayNotes] = useState('');
+  const [payAutoConfirm, setPayAutoConfirm] = useState(true);
+  const [recordingPayment, setRecordingPayment] = useState(false);
+  const [paymentError, setPaymentError] = useState('');
+  const [paymentSuccess, setPaymentSuccess] = useState('');
+
+  // Invoice Actions State
+  const [generatingInvoice, setGeneratingInvoice] = useState(false);
+  const [sendingInvoiceEmail, setSendingInvoiceEmail] = useState(false);
+  const [invoiceActionMsg, setInvoiceActionMsg] = useState('');
+
+  // Load catalog products on mount
+  useEffect(() => {
+    adminApi.getProducts({ limit: 100 })
+      .then(res => setCatalogProducts(res?.data?.products || []))
+      .catch(() => {});
+  }, []);
+
   const loadOrders = async (page = 1) => {
     setLoading(true);
     setError('');
@@ -150,14 +192,226 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
     setNewShipmentStatus('');
     setShipmentStatusNotes('');
     setShipmentFailureReason('');
+    setIsEditingFareAndItems(false);
+    setFareAndItemsError('');
+    setFareAndItemsSuccess('');
+    setPaymentError('');
+    setPaymentSuccess('');
+    setInvoiceActionMsg('');
 
     try {
       const res = await adminApi.getOrderById(orderId);
-      setSelectedOrder(res?.data?.order || null);
+      const ord = res?.data?.order || null;
+      setSelectedOrder(ord);
+      if (ord) {
+        setEditItems(ord.items?.map(it => ({
+          id: it.id,
+          productId: it.productId,
+          productName: it.productName,
+          productCategory: it.categorySnapshot || it.productCategory,
+          unitPrice: Number(it.unitPrice),
+          quantity: Number(it.quantity),
+          lineTotal: Number(it.totalPrice || it.lineTotal || (it.unitPrice * it.quantity))
+        })) || []);
+        setEditShipping(Number(ord.shippingAmount || 0));
+        setEditDiscount(Number(ord.discountAmount || 0));
+        setPayAmount(String(Number(ord.totalAmount || 0)));
+      }
     } catch (err) {
       setOrderError(err.message || 'Failed to retrieve order details.');
     } finally {
       setOrderLoading(false);
+    }
+  };
+
+  // Update item quantity in edit mode
+  const handleUpdateItemQty = (index, delta) => {
+    setEditItems(prev => {
+      const updated = [...prev];
+      const newQty = Math.max(1, (updated[index].quantity || 1) + delta);
+      updated[index] = {
+        ...updated[index],
+        quantity: newQty,
+        lineTotal: updated[index].unitPrice * newQty
+      };
+      return updated;
+    });
+  };
+
+  // Update item unit price in edit mode
+  const handleUpdateItemPrice = (index, price) => {
+    setEditItems(prev => {
+      const updated = [...prev];
+      const parsed = isNaN(Number(price)) ? 0 : Number(price);
+      updated[index] = {
+        ...updated[index],
+        unitPrice: parsed,
+        lineTotal: parsed * updated[index].quantity
+      };
+      return updated;
+    });
+  };
+
+  // Remove item from edit mode
+  const handleRemoveItem = (index) => {
+    if (editItems.length <= 1) {
+      setFareAndItemsError('An order must contain at least one item.');
+      return;
+    }
+    setEditItems(prev => prev.filter((_, idx) => idx !== index));
+  };
+
+  // Add new item to edit mode
+  const handleAddItemToOrder = () => {
+    if (!selectedProductToAdd) return;
+    const prod = catalogProducts.find(p => p.id === selectedProductToAdd);
+    if (!prod) return;
+
+    setEditItems(prev => {
+      const existingIndex = prev.findIndex(it => it.productId === prod.id);
+      if (existingIndex >= 0) {
+        const updated = [...prev];
+        const newQty = (updated[existingIndex].quantity || 1) + 1;
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          quantity: newQty,
+          lineTotal: updated[existingIndex].unitPrice * newQty
+        };
+        return updated;
+      }
+      return [
+        ...prev,
+        {
+          productId: prod.id,
+          productName: prod.name,
+          productCategory: prod.category || 'Hardware',
+          unitPrice: Number(prod.priceInr),
+          quantity: 1,
+          lineTotal: Number(prod.priceInr)
+        }
+      ];
+    });
+    setSelectedProductToAdd('');
+  };
+
+  // Save modified items and fare
+  const handleSaveFareAndItems = async (e) => {
+    e.preventDefault();
+    if (!selectedOrder) return;
+    setSavingFareAndItems(true);
+    setFareAndItemsError('');
+    setFareAndItemsSuccess('');
+
+    try {
+      const res = await adminApi.updateOrderFareAndItems(selectedOrder.id, {
+        items: editItems.map(it => ({
+          productId: it.productId,
+          productName: it.productName,
+          productCategory: it.productCategory,
+          unitPrice: Number(it.unitPrice),
+          quantity: Number(it.quantity)
+        })),
+        shippingAmount: Number(editShipping),
+        discountAmount: Number(editDiscount),
+        notes: `Items & logistics fare modified by admin`
+      });
+
+      const updated = res?.data?.order;
+      setSelectedOrder(updated);
+      setPayAmount(String(Number(updated.totalAmount || 0)));
+      setIsEditingFareAndItems(false);
+      setFareAndItemsSuccess('Order items and fare updated successfully.');
+      loadOrders(pagination.page);
+    } catch (err) {
+      setFareAndItemsError(err.message || 'Failed to update order fare and items.');
+    } finally {
+      setSavingFareAndItems(false);
+    }
+  };
+
+  // Record manual/offline/UPI payment
+  const handleRecordPayment = async (e) => {
+    e.preventDefault();
+    if (!selectedOrder) return;
+    setRecordingPayment(true);
+    setPaymentError('');
+    setPaymentSuccess('');
+
+    try {
+      const res = await adminApi.recordOrderPayment(selectedOrder.id, {
+        amount: Number(payAmount),
+        method: payMethod,
+        transactionReference: payRef.trim(),
+        notes: payNotes.trim(),
+        autoConfirm: payAutoConfirm
+      });
+
+      const updated = res?.data?.order;
+      setSelectedOrder(updated);
+      setPaymentSuccess(`Payment of ₹${payAmount} recorded successfully! Order confirmed.`);
+      loadOrders(pagination.page);
+    } catch (err) {
+      setPaymentError(err.message || 'Failed to record payment.');
+    } finally {
+      setRecordingPayment(false);
+    }
+  };
+
+  // Generate / Regenerate Tax Invoice
+  const handleGenerateInvoice = async () => {
+    if (!selectedOrder) return;
+    setGeneratingInvoice(true);
+    setInvoiceActionMsg('');
+    try {
+      await adminApi.generateOrderInvoice(selectedOrder.id);
+      setInvoiceActionMsg('Tax invoice generated successfully!');
+      const res = await adminApi.getOrderById(selectedOrder.id);
+      setSelectedOrder(res?.data?.order || selectedOrder);
+    } catch (err) {
+      setInvoiceActionMsg(err.message || 'Failed to generate invoice.');
+    } finally {
+      setGeneratingInvoice(false);
+    }
+  };
+
+  // Share Tax Invoice via WhatsApp
+  const handleShareInvoiceWhatsApp = () => {
+    if (!selectedOrder || !selectedOrder.invoice) return;
+    const phone = selectedOrder.shippingAddress?.phone || selectedOrder.user?.phone || '';
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    const targetPhone = cleanPhone.startsWith('91') ? cleanPhone : `91${cleanPhone}`;
+    const invoiceUrl = `${window.location.origin}/api/v1/invoices/${selectedOrder.invoice.id}/download`;
+
+    const message = [
+      `🏎️ *SLIDESCOIETY SIM RACING — OFFICIAL TAX INVOICE*`,
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+      `📋 *Order Reference:* #${selectedOrder.orderNumber}`,
+      `🧾 *Invoice Number:* ${selectedOrder.invoice.invoiceNumber}`,
+      `👤 *Customer Name:* ${selectedOrder.user?.fullName || selectedOrder.shippingAddress?.fullName || 'Driver'}`,
+      `💰 *Total Amount:* ${fmt(selectedOrder.totalAmount)}`,
+      `✅ *Payment Status:* PAID (${selectedOrder.payments?.[0]?.method || 'UPI/Transfer'})`,
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+      `📥 *DOWNLOAD OFFICIAL TAX INVOICE (PDF):*`,
+      invoiceUrl,
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+      `Thank you for choosing Slidescoiety! Your sim racing cockpit is officially queued for preparation and dispatch.`
+    ].join('\n');
+
+    window.open(`https://wa.me/${targetPhone}?text=${encodeURIComponent(message)}`, '_blank');
+  };
+
+  // Send Tax Invoice via Email
+  const handleSendInvoiceEmail = async () => {
+    if (!selectedOrder || !selectedOrder.invoice) return;
+    setSendingInvoiceEmail(true);
+    setInvoiceActionMsg('');
+    try {
+      await adminApi.resendInvoice(selectedOrder.invoice.id);
+      setInvoiceActionMsg(`Invoice successfully emailed to ${selectedOrder.user?.email || 'customer'}!`);
+    } catch (err) {
+      setInvoiceActionMsg(err.message || 'Failed to send invoice email.');
+    } finally {
+      setSendingInvoiceEmail(false);
     }
   };
 
@@ -556,53 +810,511 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                     </div>
                   </div>
 
-                  {/* Order Items */}
-                  <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-3">
-                    <div className="text-[10px] font-mono uppercase text-neutral-400 tracking-wider">
-                      Ordered Hardware ({selectedOrder.items?.length || 0} unique items)
+                  {/* Order Items & Fare Adjustment Card */}
+                  <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="text-[10px] font-mono uppercase text-[#e50914] font-bold tracking-wider">
+                        Ordered Hardware &amp; Logistics Fare
+                      </div>
+                      {!isSupport && selectedOrder.status !== 'CANCELLED' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!isEditingFareAndItems) {
+                              setEditItems(selectedOrder.items?.map(it => ({
+                                id: it.id,
+                                productId: it.productId,
+                                productName: it.productName,
+                                productCategory: it.categorySnapshot || it.productCategory,
+                                unitPrice: Number(it.unitPrice),
+                                quantity: Number(it.quantity),
+                                lineTotal: Number(it.totalPrice || it.lineTotal || (it.unitPrice * it.quantity))
+                              })) || []);
+                              setEditShipping(Number(selectedOrder.shippingAmount || 0));
+                              setEditDiscount(Number(selectedOrder.discountAmount || 0));
+                            }
+                            setIsEditingFareAndItems(!isEditingFareAndItems);
+                            setFareAndItemsError('');
+                            setFareAndItemsSuccess('');
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-[#e50914] text-white text-[11px] font-bold transition-all flex items-center gap-1.5"
+                        >
+                          <Edit3 className="w-3 h-3" />
+                          <span>{isEditingFareAndItems ? 'Cancel Editing' : 'Edit Items & Fare'}</span>
+                        </button>
+                      )}
                     </div>
-                    <div className="divide-y divide-white/5">
-                      {selectedOrder.items?.map((item) => (
-                        <div key={item.id} className="py-2.5 flex items-center justify-between text-xs">
-                          <div>
-                            <div className="font-bold text-white">{item.productName}</div>
-                            <div className="text-[10px] font-mono text-neutral-400">
-                              {item.categorySnapshot} • Qty: {item.quantity} × {fmt(item.unitPrice)}
+
+                    {fareAndItemsSuccess && (
+                      <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 shrink-0" />
+                        <span>{fareAndItemsSuccess}</span>
+                      </div>
+                    )}
+
+                    {fareAndItemsError && (
+                      <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                        <span>{fareAndItemsError}</span>
+                      </div>
+                    )}
+
+                    {/* View Mode */}
+                    {!isEditingFareAndItems ? (
+                      <div className="space-y-3">
+                        <div className="divide-y divide-white/5">
+                          {selectedOrder.items?.map((item) => (
+                            <div key={item.id} className="py-2.5 flex items-center justify-between text-xs">
+                              <div>
+                                <div className="font-bold text-white">{item.productName}</div>
+                                <div className="text-[10px] font-mono text-neutral-400">
+                                  {item.categorySnapshot || item.productCategory} • Qty: {item.quantity} × {fmt(item.unitPrice)}
+                                </div>
+                              </div>
+                              <div className="font-mono font-bold text-white">
+                                {fmt(item.totalPrice || item.lineTotal || (item.unitPrice * item.quantity))}
+                              </div>
                             </div>
+                          ))}
+                        </div>
+
+                        {/* Financial Totals Breakdown */}
+                        <div className="pt-3 border-t border-white/5 space-y-1.5 text-xs text-neutral-300 font-mono">
+                          <div className="flex justify-between">
+                            <span className="text-neutral-400">Subtotal ({selectedOrder.items?.length || 0} items)</span>
+                            <span className="text-white font-bold">{fmt(selectedOrder.subtotal)}</span>
                           </div>
-                          <div className="font-mono font-bold text-white">
-                            {fmt(item.totalPrice)}
+                          <div className="flex justify-between">
+                            <span className="text-neutral-400">GST (18% included)</span>
+                            <span className="text-neutral-300">{fmt(selectedOrder.taxAmount)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-neutral-400">Express Logistics Fare</span>
+                            <span className="text-neutral-300">{fmt(selectedOrder.shippingAmount)}</span>
+                          </div>
+                          {Number(selectedOrder.discountAmount) > 0 && (
+                            <div className="flex justify-between text-emerald-400">
+                              <span>Special Discount</span>
+                              <span>-{fmt(selectedOrder.discountAmount)}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between pt-2 border-t border-white/10 text-sm font-bold text-white">
+                            <span>Grand Total</span>
+                            <span className="text-[#e50914]">{fmt(selectedOrder.totalAmount)}</span>
                           </div>
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    ) : (
+                      /* Edit Mode */
+                      <form onSubmit={handleSaveFareAndItems} className="space-y-4">
+                        <div className="space-y-2.5">
+                          {editItems.map((item, idx) => (
+                            <div key={idx} className="p-3 rounded-xl bg-black/50 border border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                              <div className="flex-1 min-w-0">
+                                <div className="font-bold text-white truncate">{item.productName}</div>
+                                <div className="text-[10px] font-mono text-neutral-400">{item.productCategory}</div>
+                              </div>
+
+                              <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                                {/* Unit price override */}
+                                <div className="flex items-center gap-1.5 font-mono">
+                                  <span className="text-neutral-400 text-[11px]">₹</span>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={item.unitPrice}
+                                    onChange={(e) => handleUpdateItemPrice(idx, e.target.value)}
+                                    className="w-20 bg-black/60 border border-white/15 rounded-lg px-2 py-1 text-xs text-white text-right font-mono focus:outline-none focus:border-[#e50914]"
+                                    title="Unit Price"
+                                  />
+                                </div>
+
+                                {/* Quantity stepper */}
+                                <div className="flex items-center border border-white/15 rounded-lg bg-black/40 overflow-hidden">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleUpdateItemQty(idx, -1)}
+                                    className="p-1 text-neutral-400 hover:text-white"
+                                  >
+                                    <Minus className="w-3 h-3" />
+                                  </button>
+                                  <span className="px-2 text-xs font-mono font-bold text-white">
+                                    {item.quantity}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleUpdateItemQty(idx, 1)}
+                                    className="p-1 text-neutral-400 hover:text-white"
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                  </button>
+                                </div>
+
+                                {/* Line total */}
+                                <div className="w-24 text-right font-mono font-bold text-white">
+                                  {fmt(item.unitPrice * item.quantity)}
+                                </div>
+
+                                {/* Remove button */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveItem(idx)}
+                                  className="text-neutral-400 hover:text-rose-400 transition-colors p-1"
+                                  title="Remove item"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Add Item to Order selector */}
+                        <div className="p-3 rounded-xl bg-black/30 border border-white/10 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 text-xs">
+                          <select
+                            value={selectedProductToAdd}
+                            onChange={(e) => setSelectedProductToAdd(e.target.value)}
+                            className="flex-1 bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#e50914]"
+                          >
+                            <option value="">Select component to add to order...</option>
+                            {catalogProducts.map(p => (
+                              <option key={p.id} value={p.id}>
+                                {p.name} — {fmt(Number(p.priceInr))} ({p.category})
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={handleAddItemToOrder}
+                            disabled={!selectedProductToAdd}
+                            className="px-4 py-2 rounded-xl bg-white/10 hover:bg-[#e50914] text-white font-bold disabled:opacity-40 transition-all flex items-center justify-center gap-1.5 uppercase tracking-wider text-[11px]"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Add Component</span>
+                          </button>
+                        </div>
+
+                        {/* Fare & Discount Adjustments */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs">
+                          <div>
+                            <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                              Logistics / Shipping Fare (₹)
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={editShipping}
+                              onChange={(e) => setEditShipping(e.target.value)}
+                              placeholder="0"
+                              className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-[#e50914]"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                              Special Discount (₹)
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={editDiscount}
+                              onChange={(e) => setEditDiscount(e.target.value)}
+                              placeholder="0"
+                              className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-[#e50914]"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Live calculation preview */}
+                        <div className="p-3 rounded-xl bg-black/60 border border-white/10 space-y-1.5 text-xs font-mono">
+                          {(() => {
+                            const curSubtotal = editItems.reduce((sum, it) => sum + (Number(it.unitPrice) * Number(it.quantity)), 0);
+                            const curTax = Math.round(curSubtotal * 0.18);
+                            const curTotal = Math.max(0, curSubtotal + Number(editShipping || 0) - Number(editDiscount || 0));
+                            return (
+                              <>
+                                <div className="flex justify-between text-neutral-400">
+                                  <span>Calculated Subtotal:</span>
+                                  <span className="text-white font-bold">{fmt(curSubtotal)}</span>
+                                </div>
+                                <div className="flex justify-between text-neutral-400">
+                                  <span>GST (18% included):</span>
+                                  <span className="text-neutral-300">{fmt(curTax)}</span>
+                                </div>
+                                <div className="flex justify-between text-neutral-400">
+                                  <span>Logistics Fare:</span>
+                                  <span className="text-neutral-300">{fmt(Number(editShipping || 0))}</span>
+                                </div>
+                                <div className="flex justify-between text-sm font-bold text-white pt-1.5 border-t border-white/10">
+                                  <span>Updated Total:</span>
+                                  <span className="text-[#e50914]">{fmt(curTotal)}</span>
+                                </div>
+                              </>
+                            );
+                          })()}
+                        </div>
+
+                        {/* Save & Cancel Actions */}
+                        <div className="flex items-center gap-3 pt-2">
+                          <button
+                            type="submit"
+                            disabled={savingFareAndItems || editItems.length === 0}
+                            className="px-5 py-2.5 rounded-xl bg-[#e50914] hover:bg-[#ff1801] text-white font-bold text-xs uppercase tracking-wider transition-all shadow-md shadow-[#e50914]/30 disabled:opacity-50"
+                          >
+                            {savingFareAndItems ? 'Saving Changes...' : 'Save Fare & Items'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setIsEditingFareAndItems(false)}
+                            className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-neutral-300 hover:text-white text-xs font-bold transition-all"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    )}
                   </div>
 
-                  {/* Invoice Availability */}
-                  <div className="p-4 rounded-2xl bg-black/40 border border-white/5 flex items-center justify-between">
-                    <div>
-                      <div className="text-[10px] font-mono uppercase text-neutral-400">Tax Invoice</div>
-                      <div className="text-xs font-bold text-white mt-0.5">
+                  {/* Payment Recording & Order Confirmation Panel */}
+                  <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="w-4 h-4 text-[#e50914]" />
+                        <span className="text-[10px] font-mono uppercase text-[#e50914] font-bold tracking-wider">
+                          Payment &amp; Order Confirmation
+                        </span>
+                      </div>
+                      <span className={`px-2.5 py-0.5 rounded text-[10px] font-mono font-bold uppercase border ${getPaymentBadge(selectedOrder.payments?.[0]?.status || 'PENDING')}`}>
+                        {selectedOrder.payments?.[0]?.status || 'PENDING'}
+                      </span>
+                    </div>
+
+                    {paymentSuccess && (
+                      <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 shrink-0" />
+                        <span>{paymentSuccess}</span>
+                      </div>
+                    )}
+
+                    {paymentError && (
+                      <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                        <span>{paymentError}</span>
+                      </div>
+                    )}
+
+                    {/* Captured Payment Display */}
+                    {selectedOrder.payments?.some(p => p.status === 'CAPTURED') ? (
+                      <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-mono space-y-1">
+                        <div className="text-emerald-400 font-bold flex items-center gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>Payment Captured &amp; Verified</span>
+                        </div>
+                        {selectedOrder.payments.filter(p => p.status === 'CAPTURED').map(p => (
+                          <div key={p.id} className="text-neutral-300 text-[11px] pt-1">
+                            <div>Method: <strong className="text-white uppercase">{p.method || 'UPI/Transfer'}</strong> • Amount: <strong className="text-white">{fmt(p.amount)}</strong></div>
+                            <div className="text-neutral-400 text-[10px]">Reference: {p.providerPaymentId || 'N/A'} • Date: {new Date(p.paidAt || p.createdAt).toLocaleString()}</div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      /* Payment Pending: Record Manual Payment & Confirm Form */
+                      !isSupport && selectedOrder.status !== 'CANCELLED' && (
+                        <form onSubmit={handleRecordPayment} className="p-3.5 rounded-xl bg-black/30 border border-white/10 space-y-3">
+                          <div className="text-xs text-neutral-300 leading-snug">
+                            Record customer payment (UPI, Bank Transfer, Cash) to confirm order and automatically generate the official Tax Invoice.
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                            <div>
+                              <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                                Payment Method *
+                              </label>
+                              <select
+                                value={payMethod}
+                                onChange={(e) => setPayMethod(e.target.value)}
+                                className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#e50914]"
+                              >
+                                <option value="UPI">UPI (Google Pay, PhonePe, Paytm)</option>
+                                <option value="BANK_TRANSFER">Bank Transfer (NEFT / IMPS / RTGS)</option>
+                                <option value="CASH">Cash on Delivery / Direct Cash</option>
+                                <option value="CARD">Credit / Debit Card (Offline)</option>
+                                <option value="MANUAL">Manual Verification</option>
+                              </select>
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                                Amount Paid (₹) *
+                              </label>
+                              <input
+                                type="number"
+                                min="1"
+                                required
+                                value={payAmount}
+                                onChange={(e) => setPayAmount(e.target.value)}
+                                className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-[#e50914]"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                                Transaction / UTR Ref *
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                value={payRef}
+                                onChange={(e) => setPayRef(e.target.value)}
+                                placeholder="e.g. UPI/492019481928 or NEFT UTR"
+                                className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-[#e50914]"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                                Admin Notes (Optional)
+                              </label>
+                              <input
+                                type="text"
+                                value={payNotes}
+                                onChange={(e) => setPayNotes(e.target.value)}
+                                placeholder="e.g. Screenshot verified via WhatsApp"
+                                className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#e50914]"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 pt-1">
+                            <input
+                              type="checkbox"
+                              id="autoConfirmOrder"
+                              checked={payAutoConfirm}
+                              onChange={(e) => setPayAutoConfirm(e.target.checked)}
+                              className="rounded border-white/20 bg-black/60 text-[#e50914] focus:ring-0"
+                            />
+                            <label htmlFor="autoConfirmOrder" className="text-xs text-neutral-300 font-mono">
+                              Set Order Status to <strong className="text-emerald-400">CONFIRMED</strong> immediately
+                            </label>
+                          </div>
+
+                          <button
+                            type="submit"
+                            disabled={recordingPayment || !payRef.trim() || !payAmount}
+                            className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider transition-all disabled:opacity-50 flex items-center gap-2 shadow-md shadow-emerald-600/30"
+                          >
+                            <Check className="w-4 h-4" />
+                            <span>{recordingPayment ? 'Recording Payment...' : 'Record Payment & Confirm Order'}</span>
+                          </button>
+                        </form>
+                      )
+                    )}
+                  </div>
+
+                  {/* Tax Invoice & Customer Bill Sharing Card */}
+                  <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-[#e50914]" />
+                        <span className="text-[10px] font-mono uppercase text-[#e50914] font-bold tracking-wider">
+                          Tax Invoice &amp; Customer Bill
+                        </span>
+                      </div>
+                      {selectedOrder.invoice && (
+                        <span className="text-emerald-400 font-mono text-xs font-bold">
+                          {selectedOrder.invoice.invoiceNumber}
+                        </span>
+                      )}
+                    </div>
+
+                    {invoiceActionMsg && (
+                      <div className="p-3 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-300 text-xs flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 shrink-0" />
+                        <span>{invoiceActionMsg}</span>
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
+                      <div>
                         {selectedOrder.invoice ? (
-                          <span className="text-emerald-400 font-mono">
-                            {selectedOrder.invoice.invoiceNumber} (Status: {selectedOrder.invoice.status})
-                          </span>
+                          <div className="text-neutral-300 font-mono text-[11px]">
+                            Generated on {new Date(selectedOrder.invoice.createdAt).toLocaleDateString()} • Total: <strong className="text-white">{fmt(selectedOrder.invoice.totalAmount)}</strong>
+                          </div>
                         ) : (
-                          <span className="text-neutral-500">Invoice generates automatically upon payment capture</span>
+                          <div className="text-neutral-500 text-xs">
+                            Official invoice generates automatically upon payment confirmation or manually below.
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex flex-wrap items-center gap-2">
+                        {/* Generate Bill button if no invoice */}
+                        {!selectedOrder.invoice ? (
+                          !isSupport && (
+                            <button
+                              type="button"
+                              disabled={generatingInvoice}
+                              onClick={handleGenerateInvoice}
+                              className="px-3 py-1.5 rounded-lg bg-[#e50914] hover:bg-[#ff1801] text-white text-xs font-bold transition-all flex items-center gap-1.5 uppercase tracking-wider"
+                            >
+                              <FileText className="w-3.5 h-3.5" />
+                              <span>{generatingInvoice ? 'Generating...' : 'Generate Bill / Invoice'}</span>
+                            </button>
+                          )
+                        ) : (
+                          <>
+                            {/* Download PDF */}
+                            <button
+                              type="button"
+                              disabled={downloadingInvoice}
+                              onClick={() => handleDownloadInvoice(selectedOrder.invoice)}
+                              className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-[#e50914] text-white text-xs font-bold transition-colors flex items-center gap-1.5"
+                              title="Download PDF Tax Invoice"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              <span>{downloadingInvoice ? 'Downloading...' : 'PDF'}</span>
+                            </button>
+
+                            {/* Share via WhatsApp */}
+                            <button
+                              type="button"
+                              onClick={handleShareInvoiceWhatsApp}
+                              className="px-3 py-1.5 rounded-lg bg-[#25D366] hover:bg-[#20ba59] text-black text-xs font-black transition-all flex items-center gap-1.5 shadow-md shadow-[#25D366]/20"
+                              title="Share Invoice & Download Link with Customer via WhatsApp"
+                            >
+                              <MessageCircle className="w-3.5 h-3.5 fill-black" />
+                              <span>Share via WhatsApp</span>
+                            </button>
+
+                            {/* Send via Email */}
+                            <button
+                              type="button"
+                              disabled={sendingInvoiceEmail}
+                              onClick={handleSendInvoiceEmail}
+                              className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-colors flex items-center gap-1.5"
+                              title="Email Official Invoice PDF to Customer"
+                            >
+                              <Send className="w-3.5 h-3.5" />
+                              <span>{sendingInvoiceEmail ? 'Sending...' : 'Email Invoice'}</span>
+                            </button>
+
+                            {/* Regenerate Bill */}
+                            {!isSupport && (
+                              <button
+                                type="button"
+                                disabled={generatingInvoice}
+                                onClick={handleGenerateInvoice}
+                                className="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-neutral-300 hover:text-white text-xs font-mono transition-colors flex items-center gap-1"
+                                title="Regenerate invoice if items or fare were updated"
+                              >
+                                <RefreshCw className={`w-3 h-3 ${generatingInvoice ? 'animate-spin' : ''}`} />
+                                <span>Regen</span>
+                              </button>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
-                    {selectedOrder.invoice && (
-                      <button
-                        type="button"
-                        disabled={downloadingInvoice}
-                        onClick={() => handleDownloadInvoice(selectedOrder.invoice)}
-                        className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-[#e50914] text-white text-xs font-bold transition-colors flex items-center gap-1.5"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        <span>{downloadingInvoice ? 'Downloading...' : 'PDF Invoice'}</span>
-                      </button>
-                    )}
                   </div>
 
                   {/* Shipment & Logistics Management Card */}

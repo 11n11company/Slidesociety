@@ -750,3 +750,232 @@ export async function updateOrderStatusByAdmin(orderId, { newStatus, notes, admi
 
   return updatedOrder;
 }
+
+/**
+ * Admin: Update order items, shipping fare, and optional discount
+ * Recalculates subtotal, 18% GST tax, and total amount.
+ * If an invoice exists, automatically regenerates it so the PDF bill matches.
+ */
+export async function updateOrderFareAndItems(orderId, { items, shippingAmount, discountAmount, notes, adminUserId }) {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: {
+      items: true,
+      shippingAddress: true,
+      payments: true,
+      invoice: true
+    }
+  });
+
+  if (!order) {
+    const error = new Error(`Order [${orderId}] not found.`);
+    error.statusCode = 404;
+    error.code = 'ORDER_NOT_FOUND';
+    throw error;
+  }
+
+  if (['CANCELLED', 'RETURNED'].includes(order.status)) {
+    const error = new Error(`Cannot modify items or fare for order in terminal status '${order.status}'.`);
+    error.statusCode = 400;
+    error.code = 'INVALID_ORDER_STATE';
+    throw error;
+  }
+
+  if (!Array.isArray(items) || items.length === 0) {
+    const error = new Error('At least one item must be present in the order.');
+    error.statusCode = 400;
+    error.code = 'EMPTY_ITEMS';
+    throw error;
+  }
+
+  // Fetch product definitions to ensure items are valid and metadata is preserved
+  const productIds = items.map(it => it.productId);
+  const products = await prisma.product.findMany({
+    where: { id: { in: productIds } }
+  });
+  const productMap = new Map(products.map(p => [p.id, p]));
+
+  const validatedItems = [];
+  let subtotal = 0;
+
+  for (const it of items) {
+    const qty = parseInt(it.quantity, 10);
+    if (isNaN(qty) || qty <= 0) {
+      const error = new Error(`Invalid quantity '${it.quantity}' for product [${it.productId}]. Must be >= 1.`);
+      error.statusCode = 400;
+      error.code = 'INVALID_QUANTITY';
+      throw error;
+    }
+
+    const prod = productMap.get(it.productId);
+    const unitPrice = (it.unitPrice !== undefined && it.unitPrice !== null && !isNaN(Number(it.unitPrice)) && Number(it.unitPrice) >= 0)
+      ? Number(it.unitPrice)
+      : (prod ? Number(prod.priceInr) : Number(it.price || 0));
+
+    const productName = it.productName || prod?.name || 'Custom Hardware Component';
+    const productCategory = it.productCategory || prod?.category || 'Hardware';
+    const productImageUrl = it.productImageUrl || prod?.imageUrl || null;
+    const lineTotal = unitPrice * qty;
+
+    subtotal += lineTotal;
+
+    validatedItems.push({
+      orderId: order.id,
+      productId: it.productId,
+      productName,
+      productCategory,
+      productImageUrl,
+      unitPrice,
+      quantity: qty,
+      lineTotal,
+      customRigName: it.customRigName || null
+    });
+  }
+
+  const parsedShipping = (shippingAmount !== undefined && shippingAmount !== null && !isNaN(Number(shippingAmount)) && Number(shippingAmount) >= 0)
+    ? Number(shippingAmount)
+    : Number(order.shippingAmount);
+
+  const parsedDiscount = (discountAmount !== undefined && discountAmount !== null && !isNaN(Number(discountAmount)) && Number(discountAmount) >= 0)
+    ? Number(discountAmount)
+    : Number(order.discountAmount);
+
+  const taxAmount = Math.round(subtotal * 0.18);
+  const totalAmount = Math.max(0, subtotal + parsedShipping - parsedDiscount);
+
+  await prisma.$transaction(async (tx) => {
+    // 1. Replace order items
+    await tx.orderItem.deleteMany({ where: { orderId: order.id } });
+    await tx.orderItem.createMany({ data: validatedItems });
+
+    // 2. Update order totals
+    await tx.order.update({
+      where: { id: order.id },
+      data: {
+        subtotal,
+        taxAmount,
+        shippingAmount: parsedShipping,
+        discountAmount: parsedDiscount,
+        totalAmount
+      }
+    });
+
+    // 3. Log history
+    await tx.orderStatusHistory.create({
+      data: {
+        orderId: order.id,
+        previousStatus: order.status,
+        newStatus: order.status,
+        changedByUserId: adminUserId,
+        notes: notes || `Order items and fare modified by admin: Subtotal ₹${subtotal}, Shipping ₹${parsedShipping}, Total ₹${totalAmount}`
+      }
+    });
+  });
+
+  // 4. If invoice already exists, regenerate it to reflect new items, subtotal, and fare
+  if (order.invoice) {
+    try {
+      const { createInvoiceForOrder } = await import('./invoice.service.js');
+      await createInvoiceForOrder({ orderId: order.id, triggerSource: 'admin_order_update', forceRegenerate: true });
+    } catch (invErr) {
+      logger.warn(`Could not regenerate invoice after order update: ${invErr.message}`);
+    }
+  }
+
+  logger.info(`Admin [${adminUserId}] updated items and fare for Order [${order.orderNumber}]. New Total: ${totalAmount}`);
+  return getAdminOrderById(order.id);
+}
+
+/**
+ * Admin: Record payment for order (e.g. UPI, Bank Transfer NEFT/IMPS, Cash, Manual)
+ * Creates a CAPTURED payment record, optionally sets order status to CONFIRMED,
+ * and automatically triggers official tax invoice generation.
+ */
+export async function recordOrderPaymentByAdmin(orderId, { amount, method, transactionReference, notes, autoConfirm = true, adminUserId }) {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: {
+      items: true,
+      shippingAddress: true,
+      payments: true,
+      invoice: true
+    }
+  });
+
+  if (!order) {
+    const error = new Error(`Order [${orderId}] not found.`);
+    error.statusCode = 404;
+    error.code = 'ORDER_NOT_FOUND';
+    throw error;
+  }
+
+  const payAmount = (amount !== undefined && amount !== null && !isNaN(Number(amount)) && Number(amount) > 0)
+    ? Number(amount)
+    : Number(order.totalAmount);
+
+  const payMethod = method ? String(method).toUpperCase() : 'UPI';
+  const txRef = transactionReference ? String(transactionReference).trim() : `MANUAL_${Date.now()}`;
+
+  await prisma.$transaction(async (tx) => {
+    // 1. Create Payment record with CAPTURED status
+    await tx.payment.create({
+      data: {
+        orderId: order.id,
+        provider: 'MANUAL',
+        providerOrderId: `ord_${order.orderNumber}`,
+        providerPaymentId: txRef,
+        paymentGateway: 'MANUAL',
+        amount: payAmount,
+        currency: order.currency || 'INR',
+        status: 'CAPTURED',
+        method: payMethod,
+        paidAt: new Date(),
+        verifiedAt: new Date(),
+        rawResponse: JSON.stringify({
+          recordedBy: adminUserId,
+          method: payMethod,
+          transactionReference: txRef,
+          notes: notes || 'Manual payment recorded by administrator',
+          timestamp: new Date().toISOString()
+        })
+      }
+    });
+
+    // 2. Transition order status to CONFIRMED if autoConfirm or currently PENDING
+    if (autoConfirm || order.status === 'PENDING') {
+      await tx.order.update({
+        where: { id: order.id },
+        data: { status: 'CONFIRMED' }
+      });
+
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId: order.id,
+          previousStatus: order.status,
+          newStatus: 'CONFIRMED',
+          changedByUserId: adminUserId,
+          notes: notes || `Payment of ₹${payAmount} captured via ${payMethod} (${txRef}). Order confirmed.`
+        }
+      });
+    }
+  });
+
+  // 3. Generate official Tax Invoice
+  try {
+    const { createInvoiceForOrder } = await import('./invoice.service.js');
+    await createInvoiceForOrder({ orderId: order.id, triggerSource: 'admin_payment_confirmation', forceRegenerate: true });
+  } catch (invErr) {
+    logger.warn(`Could not generate invoice after recording payment: ${invErr.message}`);
+  }
+
+  logger.info(`Admin [${adminUserId}] recorded payment for Order [${order.orderNumber}]: ₹${payAmount} via ${payMethod}.`);
+  return getAdminOrderById(order.id);
+}
+
+/**
+ * Admin: Generate or force-regenerate tax invoice for an order.
+ */
+export async function generateAdminInvoice(orderId) {
+  const { createInvoiceForOrder } = await import('./invoice.service.js');
+  return createInvoiceForOrder({ orderId, triggerSource: 'admin_manual_invoice', forceRegenerate: true });
+}
