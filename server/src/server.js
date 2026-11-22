@@ -1,11 +1,14 @@
 import app from './app.js';
-import { env } from './config/env.js';
+import { env, validateEnv } from './config/env.js';
 import { checkDatabaseConnection, prisma } from './config/db.js';
 import { logger } from './utils/logger.js';
 import { expireStaleReservations } from './services/inventoryReservation.service.js';
 
 async function startServer() {
   logger.info(`Starting Slidescoiety Backend in [${env.NODE_ENV}] mode...`);
+
+  // Validate critical environment variables
+  validateEnv();
 
   // Verify database connection status
   await checkDatabaseConnection();

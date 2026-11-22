@@ -50,3 +50,39 @@ export const env = {
   RESERVATION_EXPIRY_MINUTES: parseInt(process.env.RESERVATION_EXPIRY_MINUTES, 10) || 30,
   RESERVATION_CLEANUP_INTERVAL_MS: parseInt(process.env.RESERVATION_CLEANUP_INTERVAL_MS, 10) || (5 * 60 * 1000)
 };
+
+/**
+ * Validates critical environment configuration at startup.
+ * Halts startup in production if secrets are missing or insecure.
+ */
+export function validateEnv() {
+  const isProd = env.NODE_ENV === 'production';
+
+  if (isProd) {
+    const missing = [];
+    if (!process.env.JWT_SECRET || process.env.JWT_SECRET.includes('dev_') || process.env.JWT_SECRET.length < 32) {
+      missing.push('JWT_SECRET (must be at least 32 characters and cryptographically secure)');
+    }
+    if (!process.env.COOKIE_SECRET || process.env.COOKIE_SECRET.includes('dev_') || process.env.COOKIE_SECRET.length < 32) {
+      missing.push('COOKIE_SECRET (must be at least 32 characters and cryptographically secure)');
+    }
+    if (!process.env.DATABASE_URL) {
+      missing.push('DATABASE_URL');
+    }
+    if (!process.env.RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID.includes('placeholder')) {
+      missing.push('RAZORPAY_KEY_ID');
+    }
+    if (!process.env.RAZORPAY_KEY_SECRET || process.env.RAZORPAY_KEY_SECRET.includes('placeholder')) {
+      missing.push('RAZORPAY_KEY_SECRET');
+    }
+    if (!process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_WEBHOOK_SECRET.includes('placeholder')) {
+      missing.push('RAZORPAY_WEBHOOK_SECRET');
+    }
+
+    if (missing.length > 0) {
+      const msg = `FATAL: Production environment validation failed. The following required variables are missing or insecure:\n  - ${missing.join('\n  - ')}`;
+      console.error(msg);
+      throw new Error(msg);
+    }
+  }
+}

@@ -594,111 +594,122 @@ export async function processWebhook({ rawBody, signature, eventIdHeader, event 
 
   logger.info(`Processing signed Razorpay webhook: Event [${eventType}], Event ID [${eventId}], Order [${razorpayOrderId}], Payment [${razorpayPaymentId}]`);
 
-  // 4. Process Events Transactionally
-  await prisma.$transaction(async (tx) => {
-    // 4a. Find matching payment record
-    let payment = null;
-    if (razorpayOrderId) {
-      payment = await tx.payment.findFirst({
-        where: { providerOrderId: razorpayOrderId }
-      });
-    }
+  // 4. Process Events Transactionally with concurrency deduplication protection
+  try {
+    await prisma.$transaction(async (tx) => {
+      // 4a. Find matching payment record
+      let payment = null;
+      if (razorpayOrderId) {
+        payment = await tx.payment.findFirst({
+          where: { providerOrderId: razorpayOrderId }
+        });
+      }
 
-    if (!payment && razorpayPaymentId) {
-      payment = await tx.payment.findFirst({
-        where: { providerPaymentId: razorpayPaymentId }
-      });
-    }
+      if (!payment && razorpayPaymentId) {
+        payment = await tx.payment.findFirst({
+          where: { providerPaymentId: razorpayPaymentId }
+        });
+      }
 
-    // Handle payment.captured or order.paid
-    if (eventType === 'payment.captured' || eventType === 'order.paid') {
-      if (payment) {
-        // If not already CAPTURED, update payment and order (handles payment failure followed by capture)
-        if (payment.status !== 'CAPTURED') {
-          await tx.payment.update({
-            where: { id: payment.id },
-            data: {
-              status: 'CAPTURED',
-              providerPaymentId: razorpayPaymentId || payment.providerPaymentId,
-              gatewayPaymentId: razorpayPaymentId || payment.gatewayPaymentId,
-              method: paymentPayload?.method || 'razorpay',
-              verifiedAt: new Date(),
-              paidAt: new Date(),
-              failureReason: null
+      // Handle payment.captured or order.paid
+      if (eventType === 'payment.captured' || eventType === 'order.paid') {
+        if (payment) {
+          // If not already CAPTURED, update payment and order (handles payment failure followed by capture)
+          if (payment.status !== 'CAPTURED') {
+            await tx.payment.update({
+              where: { id: payment.id },
+              data: {
+                status: 'CAPTURED',
+                providerPaymentId: razorpayPaymentId || payment.providerPaymentId,
+                gatewayPaymentId: razorpayPaymentId || payment.gatewayPaymentId,
+                method: paymentPayload?.method || 'razorpay',
+                verifiedAt: new Date(),
+                paidAt: new Date(),
+                failureReason: null
+              }
+            });
+
+            // Check cancellation race condition: do NOT reopen cancelled orders
+            const order = await tx.order.findUnique({
+              where: { id: payment.orderId }
+            });
+
+            if (order && order.status === 'CANCELLED') {
+              logger.warn(`Webhook captured payment for CANCELLED order [${order.orderNumber}]. Preserving cancellation status; pending refund.`);
+              await tx.orderStatusHistory.create({
+                data: {
+                  orderId: payment.orderId,
+                  previousStatus: 'CANCELLED',
+                  newStatus: 'CANCELLED',
+                  notes: `Payment captured via Webhook (Payment ID: ${razorpayPaymentId}) after order was cancelled. Order remains CANCELLED; pending refund.`
+                }
+              });
+            } else if (order) {
+              await tx.order.update({
+                where: { id: payment.orderId },
+                data: { status: 'CONFIRMED' }
+              });
+
+              await tx.orderStatusHistory.create({
+                data: {
+                  orderId: payment.orderId,
+                  previousStatus: order.status,
+                  newStatus: 'CONFIRMED',
+                  notes: `Order confirmed via Razorpay Webhook [${eventType}] (Payment ID: ${razorpayPaymentId})`
+                }
+              });
+
+              // Confirm stock reservation and commit physical inventory
+              await confirmReservationForOrder(tx, payment.orderId);
             }
-          });
-
-          // Check cancellation race condition: do NOT reopen cancelled orders
-          const order = await tx.order.findUnique({
-            where: { id: payment.orderId }
-          });
-
-          if (order && order.status === 'CANCELLED') {
-            logger.warn(`Webhook captured payment for CANCELLED order [${order.orderNumber}]. Preserving cancellation status; pending refund.`);
-            await tx.orderStatusHistory.create({
-              data: {
-                orderId: payment.orderId,
-                previousStatus: 'CANCELLED',
-                newStatus: 'CANCELLED',
-                notes: `Payment captured via Webhook (Payment ID: ${razorpayPaymentId}) after order was cancelled. Order remains CANCELLED; pending refund.`
-              }
-            });
-          } else if (order) {
-            await tx.order.update({
-              where: { id: payment.orderId },
-              data: { status: 'CONFIRMED' }
-            });
-
-            await tx.orderStatusHistory.create({
-              data: {
-                orderId: payment.orderId,
-                previousStatus: order.status,
-                newStatus: 'CONFIRMED',
-                notes: `Order confirmed via Razorpay Webhook [${eventType}] (Payment ID: ${razorpayPaymentId})`
-              }
-            });
-
-            // Confirm stock reservation and commit physical inventory
-            await confirmReservationForOrder(tx, payment.orderId);
           }
         }
       }
-    }
 
-    // Handle payment.failed
-    if (eventType === 'payment.failed') {
-      if (payment) {
-        // STRICT RULE: Never downgrade a captured payment because a delayed failure event arrives
-        if (payment.status === 'CAPTURED') {
-          logger.warn(`Received payment.failed for already CAPTURED payment [${payment.id}]. Ignoring downgrade.`);
-        } else {
-          await tx.payment.update({
-            where: { id: payment.id },
-            data: {
-              status: 'FAILED',
-              providerPaymentId: razorpayPaymentId || payment.providerPaymentId,
-              failureReason: paymentPayload?.error_description || paymentPayload?.error_reason || 'Payment failed on gateway'
-            }
-          });
+      // Handle payment.failed
+      if (eventType === 'payment.failed') {
+        if (payment) {
+          // STRICT RULE: Never downgrade a captured payment because a delayed failure event arrives
+          if (payment.status === 'CAPTURED') {
+            logger.warn(`Received payment.failed for already CAPTURED payment [${payment.id}]. Ignoring downgrade.`);
+          } else {
+            await tx.payment.update({
+              where: { id: payment.id },
+              data: {
+                status: 'FAILED',
+                providerPaymentId: razorpayPaymentId || payment.providerPaymentId,
+                failureReason: paymentPayload?.error_description || paymentPayload?.error_reason || 'Payment failed on gateway'
+              }
+            });
+          }
         }
       }
-    }
 
-    // Record processed event to prevent duplicate processing
-    await tx.processedWebhookEvent.create({
-      data: {
-        id: eventId,
-        eventType,
-        entityId: razorpayPaymentId || razorpayOrderId,
-        payload: JSON.stringify({
+      // Record processed event to prevent duplicate processing
+      await tx.processedWebhookEvent.create({
+        data: {
+          id: eventId,
           eventType,
-          orderId: payment?.orderId,
-          razorpayOrderId,
-          razorpayPaymentId
-        })
-      }
+          entityId: razorpayPaymentId || razorpayOrderId,
+          payload: JSON.stringify({
+            eventType,
+            orderId: payment?.orderId,
+            razorpayOrderId,
+            razorpayPaymentId
+          })
+        }
+      });
     });
-  });
+  } catch (err) {
+    if (err.code === 'P2002' || (err.message && err.message.includes('Unique constraint failed'))) {
+      logger.info(`Concurrent webhook event [${eventId}] was already recorded by parallel thread. Safely acknowledging duplicate.`);
+      return {
+        status: 'ALREADY_PROCESSED',
+        eventId
+      };
+    }
+    throw err;
+  }
 
   // Trigger invoice generation for captured payment (non-blocking)
   if (eventType === 'payment.captured' || eventType === 'order.paid') {
