@@ -47,7 +47,7 @@ export default function AdminPayments({ currentUser, onNavigate }) {
               customerEmail: ord.user?.email || 'N/A',
               reference: pay.providerPaymentId || pay.id,
               amount: pay.amount || ord.totalAmount,
-              method: pay.method || 'Razorpay UPI / Cards',
+              method: pay.method || 'Manual UPI / Direct Transfer',
               status: pay.status,
               date: pay.verifiedAt || pay.createdAt || ord.createdAt
             });
