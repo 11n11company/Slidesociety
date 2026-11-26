@@ -207,6 +207,10 @@ export default function CartDrawer({
       // 2. Register order in database
       const idempotencyKey = `idemp_wa_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
       const payload = {
+        items: items.map((it) => ({
+          productId: it.id,
+          quantity: it.qty || 1
+        })),
         shippingAddress: {
           recipientName: recipientName.trim(),
           phone: phone.trim(),

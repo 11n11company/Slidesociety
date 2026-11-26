@@ -53,7 +53,11 @@ export const createOrderSchema = z.object({
     };
   }, rawAddressSchema).optional(),
   customerNotes: z.string().trim().max(500).optional(),
-  idempotencyKey: z.string().trim().min(8).max(100).optional()
+  idempotencyKey: z.string().trim().min(8).max(100).optional(),
+  items: z.array(z.object({
+    productId: z.string().min(1),
+    quantity: z.number().int().min(1).default(1)
+  })).optional()
 }).refine(data => data.shippingAddressId || data.shippingAddress, {
   message: 'Either shippingAddressId or shippingAddress object must be provided',
   path: ['shippingAddress']
@@ -129,8 +133,8 @@ export async function createCustomerOrder(userId, input) {
     }
   }
 
-  // 2. Fetch Customer Cart from PostgreSQL
-  const cart = await prisma.cart.findFirst({
+  // 2. Fetch Customer Cart from input items OR from PostgreSQL cart
+  let cart = await prisma.cart.findFirst({
     where: { userId },
     include: {
       items: {
@@ -141,7 +145,29 @@ export async function createCustomerOrder(userId, input) {
     }
   });
 
-  if (!cart || !cart.items || cart.items.length === 0) {
+  let cartItems = [];
+
+  if (validated.items && validated.items.length > 0) {
+    for (const it of validated.items) {
+      const prod = await prisma.product.findUnique({
+        where: { id: it.productId }
+      });
+      if (prod) {
+        cartItems.push({
+          productId: prod.id,
+          quantity: it.quantity || 1,
+          product: prod
+        });
+      }
+    }
+  }
+
+  // Fallback to database cart if validated.items was not provided
+  if (cartItems.length === 0 && cart && cart.items && cart.items.length > 0) {
+    cartItems = cart.items;
+  }
+
+  if (cartItems.length === 0) {
     const error = new Error('Cannot place an order with an empty cart. Please add items to your cart.');
     error.statusCode = 400;
     error.code = 'EMPTY_CART';
@@ -189,7 +215,7 @@ export async function createCustomerOrder(userId, input) {
   let subtotal = 0;
   const orderItemsData = [];
 
-  for (const cartItem of cart.items) {
+  for (const cartItem of cartItems) {
     const product = cartItem.product;
     if (!product || !product.isAvailable) {
       const error = new Error(`Product [${cartItem.productId}] is currently unavailable or out of stock.`);
@@ -306,10 +332,12 @@ export async function createCustomerOrder(userId, input) {
       expiryMinutes: env.RESERVATION_EXPIRY_MINUTES
     });
 
-    // 6d. Clear Purchased Items from Customer Cart
-    await tx.cartItem.deleteMany({
-      where: { cartId: cart.id }
-    });
+    // 6d. Clear Purchased Items from Customer Cart (if cart existed in DB)
+    if (cart && cart.id) {
+      await tx.cartItem.deleteMany({
+        where: { cartId: cart.id }
+      });
+    }
 
     return order;
   });
