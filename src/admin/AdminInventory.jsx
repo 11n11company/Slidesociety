@@ -284,10 +284,10 @@ export default function AdminInventory({ currentUser }) {
       {/* ADJUST STOCK MODAL                                       */}
       {/* ======================================================== */}
       {selectedProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
           <div onClick={() => setSelectedProduct(null)} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" />
 
-          <div className="relative z-10 w-full max-w-md bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-4">
+          <div className="relative z-10 w-full max-w-md bg-white border border-slate-200 rounded-3xl p-4 sm:p-8 shadow-2xl max-h-[92dvh] overflow-y-auto space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <div className="flex items-center gap-2.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#e50914]" />

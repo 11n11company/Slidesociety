@@ -24,7 +24,7 @@ export default function WatchSetupModal({ isOpen, onClose, onGoToBuilder }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
       {/* Backdrop */}
       <div
         onClick={onClose}
@@ -36,7 +36,7 @@ export default function WatchSetupModal({ isOpen, onClose, onGoToBuilder }) {
         role="dialog"
         aria-modal="true"
         aria-label="P1-X Setup and Assembly Guide"
-        className="relative z-10 w-full max-w-2xl bg-[#0f0003] border border-white/20 rounded-3xl p-4 sm:p-8 shadow-2xl"
+        className="relative z-10 w-full max-w-2xl bg-[#0f0003] border border-white/20 rounded-3xl p-4 sm:p-8 shadow-2xl max-h-[92dvh] overflow-y-auto"
       >
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-6">

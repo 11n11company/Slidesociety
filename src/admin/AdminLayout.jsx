@@ -179,7 +179,7 @@ export default function AdminLayout({
       {/* ======================================================== */}
       {/* MAIN VIEWPORT                                            */}
       {/* ======================================================== */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen overflow-x-hidden">
         {/* Compact Desktop Header */}
         <header className="hidden lg:flex items-center justify-between px-8 py-4 bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30 shadow-2xs">
           <div className="flex items-center gap-3">
@@ -211,7 +211,7 @@ export default function AdminLayout({
         </header>
 
         {/* Content Page Outlet */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-3 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto min-w-0">
           {children}
         </main>
       </div>

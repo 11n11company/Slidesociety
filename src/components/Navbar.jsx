@@ -196,22 +196,6 @@ export default function Navbar({
             {currentUser && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 ml-0.5" />}
           </button>
 
-          {/* Admin Management Link for ADMIN personnel */}
-          {currentUser && currentUser.role === 'ADMIN' && (
-            <button
-              type="button"
-              onClick={() => {
-                window.history.pushState(null, '', '/admin/dashboard');
-                window.dispatchEvent(new PopStateEvent('popstate'));
-              }}
-              className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#e50914]/15 hover:bg-[#e50914] text-white border border-[#e50914]/40 text-xs font-mono font-bold uppercase tracking-wider transition-all"
-              title="Open Management Console"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-[#e50914]" />
-              <span>Admin</span>
-            </button>
-          )}
-
           {/* Mobile Menu Toggle */}
           <button
             type="button"

@@ -50,18 +50,18 @@ export default function Hero({ onBuildClick, onWatchSetupClick, onShowToast }) {
       </div>
 
       {/* Responsive Content Container */}
-      <div className="relative z-10 w-full max-w-[1920px] mx-auto h-[100vh] max-h-[760px] lg:max-h-[840px] xl:max-h-[890px] min-h-[460px] sm:min-h-[500px] flex items-start pt-28 sm:pt-32 md:pt-36 lg:pt-40 xl:pt-44">
+      <div className="relative z-10 w-full max-w-[1920px] mx-auto h-[100dvh] max-h-[760px] lg:max-h-[840px] xl:max-h-[890px] min-h-[440px] sm:min-h-[500px] flex items-start pt-24 sm:pt-32 md:pt-36 lg:pt-40 xl:pt-44">
 
         {/* Crisp Vector Typography & Actions (Matching Mockup Coordinates) */}
         <div className="relative z-10 w-full px-5 sm:px-10 lg:px-14 xl:px-16 pointer-events-none">
-          <div className="max-w-[270px] sm:max-w-lg lg:max-w-xl">
+          <div className="max-w-[280px] sm:max-w-lg lg:max-w-xl">
             {/* Kicker Eyebrow */}
             <p className="font-sans text-[10px] sm:text-xs font-semibold tracking-[0.24em] text-white/85 uppercase mb-1.5 sm:mb-2.5">
               BUILD / RACE / UPGRADE
             </p>
 
             {/* Main Title: P1-X (Bold Italic Sans) */}
-            <h1 className="font-sans font-black italic tracking-tight text-white uppercase leading-[0.88] text-5xl sm:text-6xl md:text-7xl lg:text-[88px] xl:text-[96px] drop-shadow-xl mb-2 sm:mb-3">
+            <h1 className="font-sans font-black italic tracking-tight text-white uppercase leading-[0.88] text-4xl sm:text-6xl md:text-7xl lg:text-[88px] xl:text-[96px] drop-shadow-xl mb-2 sm:mb-3">
               P1-X
             </h1>
 
@@ -72,7 +72,7 @@ export default function Hero({ onBuildClick, onWatchSetupClick, onShowToast }) {
             </div>
 
             {/* Interactive Pill Action Buttons */}
-            <div className="flex flex-nowrap sm:flex-wrap items-center gap-2 sm:gap-4 pointer-events-auto">
+            <div className="flex flex-wrap items-center gap-2.5 sm:gap-4 pointer-events-auto">
               {/* Primary White Button: Build Yours → */}
               <button
                 type="button"

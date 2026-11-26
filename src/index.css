@@ -6,12 +6,20 @@
   color-scheme: dark;
 }
 
-body {
+html, body {
   margin: 0;
+  width: 100%;
+  max-width: 100vw;
   background-color: #070707;
   color: #f5f6f2;
   font-family: 'DM Sans', sans-serif;
   overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+img, video {
+  max-width: 100%;
+  height: auto;
 }
 
 /* Custom Scrollbar */

@@ -328,9 +328,9 @@ export default function AdminReviews({ currentUser }) {
 
       {/* Reject Moderation Modal */}
       {reviewToReject && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
           <div onClick={() => setReviewToReject(null)} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" />
-          <div className="relative z-10 w-full max-w-md bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl space-y-4">
+          <div className="relative z-10 w-full max-w-md bg-white border border-slate-200 rounded-3xl p-4 sm:p-6 shadow-2xl max-h-[92dvh] overflow-y-auto space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <h3 className="font-bold text-lg text-slate-900 tracking-tight">
                 Reject Product Review

@@ -220,7 +220,7 @@ export default function ProductDetailModal({
         role="dialog"
         aria-modal="true"
         aria-label={`${product.name} Details and Reviews`}
-        className="relative z-10 w-full max-w-4xl bg-[#0a0002] border border-white/20 rounded-3xl p-4 sm:p-7 md:p-8 shadow-2xl transition-all duration-300 max-h-[92vh] flex flex-col font-sans"
+        className="relative z-10 w-full max-w-4xl bg-[#0a0002] border border-white/20 rounded-3xl p-4 sm:p-7 md:p-8 shadow-2xl transition-all duration-300 max-h-[92dvh] flex flex-col font-sans"
       >
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-5 sm:mb-6 shrink-0">

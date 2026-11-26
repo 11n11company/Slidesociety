@@ -498,7 +498,7 @@ export default function AccountModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
       {/* Backdrop */}
       <div onClick={onClose} className="absolute inset-0 bg-black/80 backdrop-blur-md" />
 
@@ -509,7 +509,7 @@ export default function AccountModal({
         aria-label="Driver Account"
         className={`relative z-10 w-full ${
           mode === 'orders' || mode === 'wishlist' ? 'max-w-2xl' : 'max-w-md'
-        } bg-[#0f0003] border border-white/20 rounded-3xl p-4 sm:p-8 shadow-2xl transition-all duration-300 max-h-[90vh] flex flex-col`}
+        } bg-[#0f0003] border border-white/20 rounded-3xl p-4 sm:p-8 shadow-2xl transition-all duration-300 max-h-[92dvh] flex flex-col`}
       >
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-5 shrink-0">
@@ -740,32 +740,6 @@ export default function AccountModal({
                   View Orders
                 </button>
               </div>
-
-              {/* Management Console Access for ADMIN */}
-              {currentUser && currentUser.role === 'ADMIN' && (
-                <div className="p-4 rounded-2xl bg-[#140003] border border-[#e50914]/30 flex items-center justify-between">
-                  <div>
-                    <h5 className="font-bold text-xs text-white flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-[#e50914]" />
-                      Admin Dashboard
-                    </h5>
-                    <p className="text-[11px] text-neutral-400 mt-0.5">
-                      Manage products, orders, and store settings.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onClose();
-                      window.history.pushState(null, '', '/admin/dashboard');
-                      window.dispatchEvent(new PopStateEvent('popstate'));
-                    }}
-                    className="px-3.5 py-2 rounded-xl bg-[#e50914] hover:bg-[#ff1801] text-white text-xs font-bold transition-colors shadow-md shadow-[#e50914]/20"
-                  >
-                    Open Dashboard
-                  </button>
-                </div>
-              )}
 
               <button
                 type="button"
