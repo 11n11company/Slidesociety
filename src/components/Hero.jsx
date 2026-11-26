@@ -28,6 +28,10 @@ export default function Hero({ onBuildClick, onWatchSetupClick, onShowToast }) {
       {/* Full-Bleed Studio Backdrop - Expands 100% Edge-to-Edge to Both Sides */}
       <div className="absolute inset-0 z-0 overflow-hidden w-full h-full">
         <picture className="w-full h-full block">
+          {/* Mobile-tailored full cockpit rig backdrop (<640px) */}
+          <source srcSet="/hero-backdrop-mobile.webp?v=1" media="(max-width: 639px)" type="image/webp" />
+          <source srcSet="/hero-backdrop-mobile.jpg?v=1" media="(max-width: 639px)" type="image/jpeg" />
+          {/* Desktop Ultra-HD widescreen source */}
           <source srcSet="/hero-backdrop-ultra-hd.webp?v=6" type="image/webp" />
           <img
             src="/hero-backdrop-ultra-hd.jpg?v=6"
@@ -40,17 +44,17 @@ export default function Hero({ onBuildClick, onWatchSetupClick, onShowToast }) {
               transform: 'translateZ(0)',
               backfaceVisibility: 'hidden'
             }}
-            className="w-full h-full object-cover object-[12%_top] sm:object-cover sm:object-[center_12%] pointer-events-none"
+            className="w-full h-full object-cover object-bottom sm:object-[center_12%] pointer-events-none"
           />
         </picture>
-        {/* Subtle mobile readability gradient */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#080002]/95 via-[#080002]/50 to-transparent sm:hidden pointer-events-none" />
+        {/* Subtle mobile top readability gradient for navbar clearance */}
+        <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-[#080002]/80 to-transparent sm:hidden pointer-events-none" />
         {/* Bottom atmospheric vignette */}
         <div className="absolute inset-x-0 bottom-0 h-16 sm:h-20 bg-gradient-to-t from-[#070707] via-[#070707]/60 to-transparent pointer-events-none" />
       </div>
 
       {/* Responsive Content Container */}
-      <div className="relative z-10 w-full max-w-[1920px] mx-auto h-[75vh] max-h-[580px] sm:h-[85vh] sm:max-h-[760px] lg:max-h-[840px] xl:max-h-[890px] min-h-[480px] sm:min-h-[520px] flex items-start pt-20 sm:pt-32 md:pt-36 lg:pt-40 xl:pt-44">
+      <div className="relative z-10 w-full max-w-[1920px] mx-auto h-[84vh] min-h-[560px] max-h-[660px] sm:h-[85vh] sm:max-h-[760px] lg:max-h-[840px] xl:max-h-[890px] sm:min-h-[520px] flex items-start pt-20 sm:pt-32 md:pt-36 lg:pt-40 xl:pt-44">
 
         {/* Crisp Vector Typography & Actions (Matching Mockup Coordinates) */}
         <div className="relative z-10 w-full px-5 sm:px-10 lg:px-14 xl:px-16 pointer-events-none">
