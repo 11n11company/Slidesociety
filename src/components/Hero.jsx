@@ -50,7 +50,7 @@ export default function Hero({ onBuildClick, onWatchSetupClick, onShowToast }) {
       </div>
 
       {/* Responsive Content Container */}
-      <div className="relative z-10 w-full max-w-[1920px] mx-auto h-[100vh] max-h-[760px] lg:max-h-[840px] xl:max-h-[890px] min-h-[460px] sm:min-h-[500px] flex items-start pt-20 sm:pt-24 md:pt-28 lg:pt-32 xl:pt-36">
+      <div className="relative z-10 w-full max-w-[1920px] mx-auto h-[100vh] max-h-[760px] lg:max-h-[840px] xl:max-h-[890px] min-h-[460px] sm:min-h-[500px] flex items-start pt-28 sm:pt-32 md:pt-36 lg:pt-40 xl:pt-44">
 
         {/* Crisp Vector Typography & Actions (Matching Mockup Coordinates) */}
         <div className="relative z-10 w-full px-5 sm:px-10 lg:px-14 xl:px-16 pointer-events-none">
