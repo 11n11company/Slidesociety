@@ -149,7 +149,9 @@ export function requireRole(...allowedRoles) {
         success: false,
         error: {
           code: 'FORBIDDEN',
-          message: `Access denied. Requires one of [${allowedRoles.join(', ')}] role.`
+          message: allowedRoles.length === 1
+            ? `Access denied. Requires [${allowedRoles[0]}] role.`
+            : `Access denied. Requires one of [${allowedRoles.join(', ')}] role.`
         }
       });
     }

@@ -46,7 +46,7 @@ async function run() {
 [ERROR] Missing required arguments for admin provisioning.
 
 Usage:
-  node src/utils/createAdmin.js --email <admin-email> --name <full-name> --password <strong-password> [--role ADMIN|SUPPORT]
+  node src/utils/createAdmin.js --email <admin-email> --name <full-name> --password <strong-password>
     `);
     process.exit(1);
   }

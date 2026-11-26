@@ -14,9 +14,9 @@ const router = Router();
 // Authentication required for all admin endpoints
 router.use(authenticateCustomer);
 
-// Product read: ADMIN or SUPPORT
-router.get('/', requireRole('ADMIN', 'SUPPORT'), listProducts);
-router.get('/:id', requireRole('ADMIN', 'SUPPORT'), getProductDetails);
+// Product read: strictly ADMIN only
+router.get('/', requireRole('ADMIN'), listProducts);
+router.get('/:id', requireRole('ADMIN'), getProductDetails);
 
 // Product mutations & stock modifications: strictly ADMIN only (SUPPORT blocked)
 router.post('/', requireRole('ADMIN'), createProduct);

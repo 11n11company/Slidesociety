@@ -52,7 +52,7 @@ export default function AdminProducts({ currentUser }) {
   const [productToDelete, setProductToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
-  const isSupport = currentUser?.role === 'SUPPORT';
+  const isSupport = false;
 
   const loadProducts = async (page = 1) => {
     setLoading(true);

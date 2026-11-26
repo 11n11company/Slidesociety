@@ -14,7 +14,7 @@ export async function getInvoiceByOrder(req, res, next) {
   try {
     const { orderId } = req.params;
     const userId = req.user.id;
-    const isStaff = req.user.role === 'ADMIN' || req.user.role === 'SUPPORT';
+    const isStaff = req.user.role === 'ADMIN';
 
     const invoice = await fetchInvoiceByOrder({ orderId, userId, isAdmin: isStaff });
 
@@ -45,7 +45,7 @@ export async function downloadInvoice(req, res, next) {
   try {
     const { invoiceId } = req.params;
     const userId = req.user.id;
-    const isStaff = req.user.role === 'ADMIN' || req.user.role === 'SUPPORT';
+    const isStaff = req.user.role === 'ADMIN';
 
     const invoice = await fetchInvoiceById(invoiceId, { userId, isAdmin: isStaff });
 
@@ -104,7 +104,7 @@ export async function resendInvoice(req, res, next) {
   try {
     const { invoiceId } = req.params;
     const userId = req.user.id;
-    const isStaff = req.user.role === 'ADMIN' || req.user.role === 'SUPPORT';
+    const isStaff = req.user.role === 'ADMIN';
 
     const result = await triggerResendInvoiceEmail({ invoiceId, userId, isAdmin: isStaff });
 

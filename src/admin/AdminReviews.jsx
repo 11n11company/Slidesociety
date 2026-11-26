@@ -34,7 +34,7 @@ export default function AdminReviews({ currentUser }) {
   const [rejectNote, setRejectNote] = useState('');
   const [rejecting, setRejecting] = useState(false);
 
-  const isSupport = currentUser?.role === 'SUPPORT';
+  const isSupport = false;
 
   const loadReviews = async (page = 1) => {
     setLoading(true);

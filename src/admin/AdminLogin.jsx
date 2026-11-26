@@ -28,10 +28,10 @@ export default function AdminLogin({ onLoginSuccess, onNavigate }) {
       }
 
       // Check role authorization on login
-      if (user.role !== 'ADMIN' && user.role !== 'SUPPORT') {
+      if (user.role !== 'ADMIN') {
         // Driver accounts are forbidden from management console
         await authApi.logout().catch(() => {});
-        throw new Error('Access denied. Customer driver accounts are not authorized to access the management console.');
+        throw new Error('Access denied. Restricted to administrator personnel only.');
       }
 
       onLoginSuccess(user);
@@ -64,7 +64,7 @@ export default function AdminLogin({ onLoginSuccess, onNavigate }) {
             MANAGEMENT CONSOLE
           </span>
           <p className="text-xs text-neutral-400 mt-1">
-            Restricted to authorized ADMIN and SUPPORT personnel only.
+            Restricted to authorized ADMIN personnel only.
           </p>
         </div>
 

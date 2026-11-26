@@ -11,8 +11,8 @@ const router = Router();
 // Authentication required
 router.use(authenticateCustomer);
 
-// Read inventory: ADMIN or SUPPORT
-router.get('/', requireRole('ADMIN', 'SUPPORT'), listInventory);
+// Read inventory: strictly ADMIN only
+router.get('/', requireRole('ADMIN'), listInventory);
 
 // Adjust inventory stock: strictly ADMIN only
 router.patch('/:id/stock', requireRole('ADMIN'), updateStock);

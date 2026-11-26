@@ -741,8 +741,8 @@ export default function AccountModal({
                 </button>
               </div>
 
-              {/* Management Console Access for ADMIN and SUPPORT */}
-              {currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'SUPPORT') && (
+              {/* Management Console Access for ADMIN */}
+              {currentUser && currentUser.role === 'ADMIN' && (
                 <div className="p-4 rounded-2xl bg-[#140003] border border-[#e50914]/30 flex items-center justify-between">
                   <div>
                     <h5 className="font-bold text-xs text-white flex items-center gap-1.5">

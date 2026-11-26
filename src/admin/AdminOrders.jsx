@@ -108,7 +108,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
   const [shipmentFailureReason, setShipmentFailureReason] = useState('');
   const [updatingShipmentStatus, setUpdatingShipmentStatus] = useState(false);
 
-  const isSupport = currentUser?.role === 'SUPPORT';
+  const isSupport = false;
 
   // Catalog products for item addition
   const [catalogProducts, setCatalogProducts] = useState([]);

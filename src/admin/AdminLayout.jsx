@@ -43,8 +43,6 @@ export default function AdminLayout({
     setMobileMenuOpen(false);
   };
 
-  const isSupport = currentUser?.role === 'SUPPORT';
-
   return (
     <div className="min-h-screen bg-[#070707] text-[#f5f6f2] flex flex-col lg:flex-row font-sans">
       {/* ======================================================== */}
@@ -58,11 +56,7 @@ export default function AdminLayout({
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider border ${
-            isSupport
-              ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-              : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-          }`}>
+          <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider border bg-emerald-500/10 text-emerald-400 border-emerald-500/30">
             {currentUser?.role || 'ADMIN'}
           </span>
           <button
@@ -165,11 +159,7 @@ export default function AdminLayout({
                 {currentUser?.email || 'admin@slidescoiety.com'}
               </p>
             </div>
-            <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase shrink-0 border ${
-              isSupport
-                ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-            }`}>
+            <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase shrink-0 border bg-emerald-500/15 text-emerald-300 border-emerald-500/30">
               {currentUser?.role || 'ADMIN'}
             </span>
           </div>
@@ -203,12 +193,8 @@ export default function AdminLayout({
             <div className="flex items-center gap-2 text-xs">
               <span className="text-neutral-400 font-mono text-[11px]">Logged in as:</span>
               <span className="font-bold text-white">{currentUser?.fullName || currentUser?.email}</span>
-              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase border ${
-                isSupport
-                  ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                  : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-              }`}>
-                {currentUser?.role}
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase border bg-emerald-500/15 text-emerald-300 border-emerald-500/30">
+                {currentUser?.role || 'ADMIN'}
               </span>
             </div>
 

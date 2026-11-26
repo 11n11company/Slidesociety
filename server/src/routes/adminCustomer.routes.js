@@ -10,8 +10,8 @@ const router = Router();
 // Authentication required
 router.use(authenticateCustomer);
 
-// Customers list and details accessible by ADMIN and SUPPORT
-router.use(requireRole('ADMIN', 'SUPPORT'));
+// Customers list and details accessible by ADMIN only
+router.use(requireRole('ADMIN'));
 
 router.get('/', listCustomers);
 router.get('/:id', getCustomerDetails);

@@ -10,11 +10,11 @@ import { authenticateCustomer, requireRole } from '../middleware/auth.middleware
 
 const router = Router();
 
-// All admin shipment endpoints require authentication and ADMIN or SUPPORT role
+// All admin shipment endpoints require authentication and ADMIN role
 router.use(authenticateCustomer);
-router.use(requireRole('ADMIN', 'SUPPORT'));
+router.use(requireRole('ADMIN'));
 
-// Read endpoints: accessible by ADMIN and SUPPORT
+// Read endpoints: accessible by ADMIN only
 router.get('/', listShipments);
 router.get('/:id', getShipment);
 

@@ -10,8 +10,8 @@ const router = Router();
 // Protect all admin review routes
 router.use(authenticateCustomer);
 
-// Read-only list: Accessible by ADMIN and SUPPORT
-router.get('/', requireRole('ADMIN', 'SUPPORT'), getAdminReviews);
+// Read-only list: Accessible by ADMIN ONLY
+router.get('/', requireRole('ADMIN'), getAdminReviews);
 
 // Moderation (Approve/Reject): Accessible by ADMIN ONLY
 router.patch('/:reviewId/status', requireRole('ADMIN'), moderateReview);

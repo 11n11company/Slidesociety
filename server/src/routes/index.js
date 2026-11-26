@@ -44,11 +44,11 @@ router.use('/v1/payments', paymentRoutes);
 // /api/v1/invoices (PDF Invoices & Email Resend)
 router.use('/v1/invoices', invoiceRoutes);
 
-// /api/v1/admin/overview (Dashboard Analytics - Accessible by ADMIN & SUPPORT)
+// /api/v1/admin/overview (Dashboard Analytics - Accessible by ADMIN only)
 router.get(
   '/v1/admin/overview',
   authenticateCustomer,
-  requireRole('ADMIN', 'SUPPORT'),
+  requireRole('ADMIN'),
   getOverview
 );
 

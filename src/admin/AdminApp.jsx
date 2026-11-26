@@ -72,7 +72,7 @@ export default function AdminApp({ onExitAdmin }) {
     setCheckingAuth(true);
     try {
       const user = await authApi.getMe();
-      if (user && (user.role === 'ADMIN' || user.role === 'SUPPORT')) {
+      if (user && user.role === 'ADMIN') {
         setCurrentUser(user);
         if (currentRoute === '/admin/login') {
           navigate('/admin/dashboard');

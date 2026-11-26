@@ -196,8 +196,8 @@ export default function Navbar({
             {currentUser && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 ml-0.5" />}
           </button>
 
-          {/* Admin Management Link for ADMIN & SUPPORT personnel */}
-          {currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'SUPPORT') && (
+          {/* Admin Management Link for ADMIN personnel */}
+          {currentUser && currentUser.role === 'ADMIN' && (
             <button
               type="button"
               onClick={() => {

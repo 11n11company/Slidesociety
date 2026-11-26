@@ -33,7 +33,7 @@ export default function AdminInventory({ currentUser }) {
   const [adjusting, setAdjusting] = useState(false);
   const [adjustError, setAdjustError] = useState('');
 
-  const isSupport = currentUser?.role === 'SUPPORT';
+  const isSupport = false;
 
   const loadInventory = async (page = 1) => {
     setLoading(true);
