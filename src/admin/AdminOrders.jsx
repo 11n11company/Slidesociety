@@ -1600,65 +1600,6 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                     )}
                   </div>
 
-                  {/* Status Machine Transition Form (ADMIN only) */}
-                  {!isSupport && (
-                    <div className="p-4 rounded-2xl bg-[#140003] border border-[#e50914]/30 space-y-3">
-                      <div className="text-[11px] font-mono font-bold text-[#e50914] uppercase tracking-wider">
-                        Update Order Fulfillment Status (State Machine)
-                      </div>
-
-                      {ALLOWED_STATUS_TRANSITIONS[selectedOrder.status]?.length > 0 ? (
-                        <form onSubmit={handleUpdateStatus} className="space-y-3">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div>
-                              <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
-                                Next Allowed Status
-                              </label>
-                              <select
-                                value={newStatus}
-                                onChange={(e) => setNewStatus(e.target.value)}
-                                className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#e50914]"
-                                required
-                              >
-                                <option value="">Select Next Status</option>
-                                {ALLOWED_STATUS_TRANSITIONS[selectedOrder.status].map((st) => (
-                                  <option key={st} value={st}>
-                                    {st}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-
-                            <div>
-                              <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
-                                Transition Reason / Audit Note (Optional)
-                              </label>
-                              <input
-                                type="text"
-                                value={statusNotes}
-                                onChange={(e) => setStatusNotes(e.target.value)}
-                                placeholder="e.g. Fabrication complete, transferred to carrier"
-                                className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-[#e50914]"
-                              />
-                            </div>
-                          </div>
-
-                          <button
-                            type="submit"
-                            disabled={updatingStatus || !newStatus}
-                            className="px-5 py-2 rounded-xl bg-[#e50914] hover:bg-[#ff1801] disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider transition-all"
-                          >
-                            {updatingStatus ? 'Transitioning...' : 'Apply Status Transition'}
-                          </button>
-                        </form>
-                      ) : (
-                        <div className="text-xs text-neutral-500 font-mono">
-                          Order is in terminal state ({selectedOrder.status}). No further transitions allowed.
-                        </div>
-                      )}
-                    </div>
-                  )}
-
                   {/* Audit Status History */}
                   <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-3">
                     <div className="text-[10px] font-mono uppercase text-neutral-400 tracking-wider">

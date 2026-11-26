@@ -1173,39 +1173,6 @@ export default function AccountModal({
                       ))}
                     </div>
                   </div>
-
-                  {/* Order Status History Timeline */}
-                  {selectedOrder.statusHistory && selectedOrder.statusHistory.length > 0 && (
-                    <div className="space-y-2 pt-2">
-                      <div className="flex items-center gap-1.5 text-[11px] font-mono uppercase text-neutral-400">
-                        <Clock className="w-3.5 h-3.5 text-[#e50914]" />
-                        <span>Telemetry & Status Audit History</span>
-                      </div>
-                      <div className="space-y-2">
-                        {selectedOrder.statusHistory.map((h, idx) => (
-                          <div
-                            key={h.id || idx}
-                            className="flex items-start gap-3 p-2.5 rounded-xl bg-black/30 border border-white/5 text-xs"
-                          >
-                            <div className="w-2 h-2 rounded-full bg-[#e50914] mt-1.5 shrink-0" />
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between">
-                                <span className="font-mono font-bold text-white text-[11px]">
-                                  {h.newStatus || h.status}
-                                </span>
-                                <span className="text-[10px] text-neutral-500 font-mono">
-                                  {new Date(h.createdAt).toLocaleString()}
-                                </span>
-                              </div>
-                              {h.notes && (
-                                <p className="text-[11px] text-neutral-400 mt-0.5 italic">{h.notes}</p>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
               ) : (
                 /* Orders List View */
