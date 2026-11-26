@@ -529,20 +529,20 @@ export default function AccountModal({
               {mode === 'orders'
                 ? selectedOrder
                   ? `Order ${selectedOrder.orderNumber}`
-                  : 'Order History & Telemetry'
+                  : 'Order History'
                 : mode === 'wishlist'
-                ? 'Saved Telemetry & Wishlist'
+                ? 'Wishlist'
                 : mode === 'profile'
-                ? 'Driver Profile'
+                ? 'My Account'
                 : mode === 'register'
-                ? 'New Driver Registration'
+                ? 'Create Account'
                 : mode === 'forgot'
-                ? 'Reset Driver Password'
+                ? 'Reset Password'
                 : mode === 'reset'
                 ? 'Enter New Password'
                 : mode === 'verify'
-                ? 'Verify Email Address'
-                : 'Driver Account'}
+                ? 'Verify Email'
+                : 'Account'}
             </h3>
           </div>
           <button
@@ -624,7 +624,7 @@ export default function AccountModal({
               }`}
             >
               <User className="w-3.5 h-3.5" />
-              <span>Driver Profile</span>
+              <span>Profile</span>
             </button>
             <button
               type="button"
@@ -684,7 +684,7 @@ export default function AccountModal({
           {/* VIEW 1: PROFILE (AUTHENTICATED CUSTOMER)                 */}
           {/* ======================================================== */}
           {mode === 'profile' && currentUser && (
-            <div className="space-y-6">
+            <div className="space-y-4">
               <div className="p-4 rounded-2xl bg-black/50 border border-white/10 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -702,10 +702,10 @@ export default function AccountModal({
                 </div>
 
                 <div className="pt-2 border-t border-white/10 flex items-center justify-between text-xs">
-                  <span className="text-neutral-400">Account Status:</span>
+                  <span className="text-neutral-400">Status:</span>
                   {currentUser.isVerified ? (
                     <span className="inline-flex items-center gap-1 text-emerald-400 font-medium">
-                      <ShieldCheck className="w-3.5 h-3.5" /> Verified Driver
+                      <ShieldCheck className="w-3.5 h-3.5" /> Verified
                     </span>
                   ) : (
                     <button
@@ -724,9 +724,9 @@ export default function AccountModal({
 
               <div className="p-4 rounded-2xl bg-black/50 border border-white/10 flex items-center justify-between">
                 <div>
-                  <h5 className="font-bold text-xs text-white">Order Management</h5>
+                  <h5 className="font-bold text-xs text-white">My Orders</h5>
                   <p className="text-[11px] text-neutral-400 mt-0.5">
-                    Track cockpit fabrication, logistics, and order history.
+                    View order status and history.
                   </p>
                 </div>
                 <button
@@ -735,7 +735,7 @@ export default function AccountModal({
                     setMode('orders');
                     loadOrders();
                   }}
-                  className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-[#e50914] text-white text-xs font-bold transition-colors"
+                  className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-[#e50914] text-white text-xs font-bold transition-colors"
                 >
                   View Orders
                 </button>
@@ -747,10 +747,10 @@ export default function AccountModal({
                   <div>
                     <h5 className="font-bold text-xs text-white flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-[#e50914]" />
-                      Management Console
+                      Admin Dashboard
                     </h5>
                     <p className="text-[11px] text-neutral-400 mt-0.5">
-                      Access the Slidescoiety Pit Wall & administration panel.
+                      Manage products, orders, and store settings.
                     </p>
                   </div>
                   <button
@@ -760,23 +760,18 @@ export default function AccountModal({
                       window.history.pushState(null, '', '/admin/dashboard');
                       window.dispatchEvent(new PopStateEvent('popstate'));
                     }}
-                    className="px-3 py-1.5 rounded-lg bg-[#e50914] hover:bg-[#ff1801] text-white text-xs font-bold transition-colors shadow-md shadow-[#e50914]/20"
+                    className="px-3.5 py-2 rounded-xl bg-[#e50914] hover:bg-[#ff1801] text-white text-xs font-bold transition-colors shadow-md shadow-[#e50914]/20"
                   >
-                    Open Console
+                    Open Dashboard
                   </button>
                 </div>
               )}
-
-              <div className="p-3.5 rounded-xl bg-[#e50914]/10 border border-[#e50914]/20 flex items-center gap-2.5 text-xs text-neutral-300">
-                <Sparkles className="w-4 h-4 text-[#e50914] shrink-0" />
-                <span>Cart items & custom rig setups are synchronized with your driver profile.</span>
-              </div>
 
               <button
                 type="button"
                 onClick={handleLogout}
                 disabled={loading}
-                className="w-full py-3 rounded-full bg-white/10 hover:bg-[#e50914] hover:text-white text-neutral-200 font-bold text-xs uppercase tracking-wider transition-all border border-white/10 flex items-center justify-center gap-2"
+                className="w-full py-3 rounded-full bg-white/10 hover:bg-[#e50914] hover:text-white text-neutral-200 font-bold text-xs uppercase tracking-wider transition-all border border-white/10 flex items-center justify-center gap-2 mt-2"
               >
                 <LogOut className="w-4 h-4" />
                 <span>Sign Out</span>

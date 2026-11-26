@@ -1,3 +1,6 @@
+import crypto from 'crypto';
+import { prisma } from '../config/db.js';
+import { hashPassword } from '../utils/security.js';
 import {
   createCustomerOrder,
   getCustomerOrders,
@@ -8,12 +11,50 @@ import {
 import { getCustomerOrderTracking } from '../services/shipping.service.js';
 
 /**
- * Customer Order Creation
+ * Customer & Guest Order Creation
  * POST /api/v1/orders
  */
 export async function createOrder(req, res, next) {
   try {
-    const result = await createCustomerOrder(req.user.id, req.body);
+    let customerId = req.user?.id;
+
+    if (!customerId) {
+      // Seamless guest checkout: auto-resolve or provision a guest customer
+      const rawAddress = req.body.shippingAddress || {};
+      const guestPhone = rawAddress.phone || '';
+      const guestName = rawAddress.recipientName || 'Guest Customer';
+      const cleanPhoneDigits = guestPhone.replace(/\D/g, '');
+      const inputEmail = req.body.customerEmail || req.body.email || req.body.accountEmail;
+
+      const guestEmail = inputEmail && inputEmail.includes('@')
+        ? inputEmail.trim().toLowerCase()
+        : cleanPhoneDigits.length >= 7
+        ? `guest_${cleanPhoneDigits}@guest.slidescoiety.com`
+        : `guest_${Date.now()}_${Math.random().toString(36).substring(2, 7)}@guest.slidescoiety.com`;
+
+      let existingUser = await prisma.user.findUnique({
+        where: { email: guestEmail }
+      });
+
+      if (!existingUser) {
+        const randomPassword = crypto.randomBytes(16).toString('hex');
+        const randomHash = await hashPassword(randomPassword);
+        existingUser = await prisma.user.create({
+          data: {
+            email: guestEmail,
+            passwordHash: randomHash,
+            fullName: guestName,
+            phone: guestPhone || null,
+            role: 'CUSTOMER',
+            isVerified: true
+          }
+        });
+      }
+
+      customerId = existingUser.id;
+    }
+
+    const result = await createCustomerOrder(customerId, req.body);
 
     const statusCode = result.isIdempotentReplay ? 200 : 201;
     const message = result.isIdempotentReplay

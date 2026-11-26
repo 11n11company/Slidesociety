@@ -58,9 +58,8 @@ export default function CartDrawer({
     return () => window.removeEventListener('slidescoiety:products-updated', handleUpdated);
   }, []);
 
-  // Guest Account Creation Fields
+  // Optional Email for order confirmation
   const [accountEmail, setAccountEmail] = useState('');
-  const [accountPassword, setAccountPassword] = useState('');
 
   // Address form fields
   const [recipientName, setRecipientName] = useState('');
@@ -135,47 +134,7 @@ export default function CartDrawer({
     setStep('checkout');
   };
 
-  // Helper to ensure driver account exists or is created on-the-fly
-  const ensureDriverAccount = async () => {
-    if (currentUser) return currentUser;
-
-    if (!accountEmail || !accountPassword) {
-      throw new Error('Please enter your email and choose a password to create your Slidescoiety Driver Account.');
-    }
-
-    if (accountPassword.length < 8 || !/[A-Za-z]/.test(accountPassword) || !/[0-9]/.test(accountPassword)) {
-      throw new Error('Account password must be at least 8 characters long and contain both letters and numbers.');
-    }
-
-    try {
-      const regRes = await authApi.register({
-        fullName: recipientName || 'Sim Racer',
-        email: accountEmail.trim().toLowerCase(),
-        password: accountPassword,
-        confirmPassword: accountPassword
-      });
-      const newUser = regRes?.data?.user;
-      onAuthSuccess?.(newUser);
-      return newUser;
-    } catch (err) {
-      if (err.code === 'EMAIL_ALREADY_EXISTS') {
-        try {
-          const logRes = await authApi.login({
-            email: accountEmail.trim().toLowerCase(),
-            password: accountPassword
-          });
-          const loggedUser = logRes?.data?.user;
-          onAuthSuccess?.(loggedUser);
-          return loggedUser;
-        } catch (loginErr) {
-          throw new Error('An account with this email already exists. Please verify your password or sign in first.');
-        }
-      }
-      throw err;
-    }
-  };
-
-  // WhatsApp Checkout Handler: Registers Driver & Order in Database, then opens WhatsApp with full build details
+  // WhatsApp Checkout Handler: Registers Order in Database, then opens WhatsApp with full build details
   const handleWhatsAppCheckout = async (e) => {
     if (e) e.preventDefault();
     setError('');
@@ -201,12 +160,10 @@ export default function CartDrawer({
         throw new Error('Please enter your PIN code.');
       }
 
-      // 1. Ensure driver account is created or active
-      const user = await ensureDriverAccount();
-
-      // 2. Register order in database
+      // 1. Register order in database (supports guest checkout seamlessly)
       const idempotencyKey = `idemp_wa_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
       const payload = {
+        customerEmail: accountEmail ? accountEmail.trim().toLowerCase() : undefined,
         items: items.map((it) => ({
           productId: it.id,
           quantity: it.qty || 1
@@ -222,8 +179,8 @@ export default function CartDrawer({
           country: country || 'India'
         },
         customerNotes: customerNotes
-          ? `[WhatsApp Build Consultation] ${customerNotes.trim()}`
-          : '[WhatsApp Build Consultation] Driver requested professional consultation for custom rig configuration.',
+          ? `[WhatsApp Inquiry] ${customerNotes.trim()}`
+          : '[WhatsApp Inquiry] Customer requested consultation for custom rig setup.',
         idempotencyKey
       };
 
@@ -233,45 +190,44 @@ export default function CartDrawer({
       setWhatsappOrder(newOrder);
       onClearCart?.();
 
-      // 3. Compile rich formatted WhatsApp message
+      // 2. Compile clean, readable WhatsApp message
       const technicianPhone = import.meta.env.VITE_WHATSAPP_NUMBER || '917902482052';
       const itemsListText = items.map((it, idx) => `  ${idx + 1}. *${it.name}* (x${it.qty}) — ${fmt(it.price * it.qty)}`).join('\n');
 
       const waMessage = [
-        `🏎️ *SLIDESCOIETY SIM RACING — CUSTOM BUILD INQUIRY*`,
+        `🏎️ *SLIDESCOIETY — CUSTOM RIG INQUIRY*`,
         `━━━━━━━━━━━━━━━━━━━━━━━━━━`,
-        `📋 *Order Reference:* #${newOrder.orderNumber}`,
-        `👤 *Driver Name:* ${recipientName.trim()}`,
-        `📞 *Contact Phone:* ${phone.trim()}`,
-        `📧 *Driver Email:* ${user.email || accountEmail}`,
-        `📍 *Delivery Location:* ${city.trim()}, ${state.trim()} - ${postalCode.trim()}, ${country || 'India'}`,
-        `🏠 *Street Address:* ${streetLine1.trim()}${streetLine2 ? ', ' + streetLine2.trim() : ''}`,
+        `📋 *Order Ref:* #${newOrder.orderNumber}`,
+        `👤 *Name:* ${recipientName.trim()}`,
+        `📞 *Phone:* ${phone.trim()}`,
+        accountEmail ? `📧 *Email:* ${accountEmail.trim()}` : '',
+        `📍 *Delivery:* ${city.trim()}, ${state.trim()} - ${postalCode.trim()}`,
+        `🏠 *Address:* ${streetLine1.trim()}${streetLine2 ? ', ' + streetLine2.trim() : ''}`,
         `━━━━━━━━━━━━━━━━━━━━━━━━━━`,
-        `🛠️ *CONFIGURED RIG COMPONENTS (${items.length} items):*`,
+        `🛠️ *COMPONENTS (${items.length} items):*`,
         itemsListText,
         `━━━━━━━━━━━━━━━━━━━━━━━━━━`,
-        `💰 *PRICING SUMMARY:*`,
+        `💰 *PRICING:*`,
         `• Subtotal: ${fmt(subtotal)}`,
         `• GST (18% included): ${fmt(tax)}`,
-        `• Express Logistics: ${shipping === 0 ? 'FREE' : fmt(shipping)}`,
-        `• *Grand Total: ${fmt(total)}*`,
-        customerNotes ? `\n📝 *Driver Notes / Rig Specs:*\n"${customerNotes.trim()}"` : '',
+        `• Logistics: ${shipping === 0 ? 'FREE' : fmt(shipping)}`,
+        `• *Total: ${fmt(total)}*`,
+        customerNotes ? `\n📝 *Notes:*\n"${customerNotes.trim()}"` : '',
         `━━━━━━━━━━━━━━━━━━━━━━━━━━`,
-        `💬 *Inquiry Message:*`,
-        `Hi Slidescoiety Engineering Team! I have configured my custom sim racing setup and registered Order #${newOrder.orderNumber} on the store. I would like to consult with a technician to finalize the build process, verify wheelbase torque compatibility, and schedule dispatch.`
+        `Hi Slidescoiety Team! I would like to confirm my order #${newOrder.orderNumber} and check dispatch details.`
       ].filter(Boolean).join('\n');
 
       const fullWaUrl = `https://wa.me/${technicianPhone}?text=${encodeURIComponent(waMessage)}`;
       setWhatsappUrl(fullWaUrl);
 
-      // 4. Open WhatsApp
+      // 3. Open WhatsApp in new tab
       window.open(fullWaUrl, '_blank');
 
-      // 5. Transition drawer to WhatsApp confirmation view
+      // 4. Transition drawer to confirmation view
       setStep('whatsapp_confirmation');
       onShowToast?.(`Order ${newOrder.orderNumber} registered! Opening WhatsApp...`);
     } catch (err) {
-      setError(err.message || 'Failed to initialize WhatsApp consultation. Please check your information and try again.');
+      setError(err.message || 'Failed to place order. Please check your information and try again.');
     } finally {
       setLoading(false);
     }
@@ -436,13 +392,6 @@ export default function CartDrawer({
                   </div>
                 </div>
 
-                {!currentUser && (
-                  <div className="p-3 rounded-xl bg-neutral-900 border border-white/10 text-xs text-neutral-300 flex items-center gap-2">
-                    <User className="w-4 h-4 text-[#e50914] shrink-0" />
-                    <span>Your Driver Account will be created on checkout for build tracking.</span>
-                  </div>
-                )}
-
                 <button
                   type="button"
                   onClick={handleProceedToCheckout}
@@ -469,93 +418,35 @@ export default function CartDrawer({
                 </div>
               )}
 
-              {/* Consultation & Assisted Checkout Info Banner */}
-              <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-200 space-y-1">
-                <div className="flex items-center gap-1.5 font-bold">
-                  <MessageCircle className="w-4 h-4 text-[#25D366] fill-[#25D366]" />
-                  <span className="text-white">Assisted Custom Build Order & WhatsApp Consultation</span>
-                </div>
-                <p className="text-[11px] text-emerald-300/80 leading-relaxed">
-                  Submitting your order saves your build enquiry in our system and directly connects you with our engineering technician on WhatsApp to finalize hardware details, freight logistics, and payment.
-                </p>
+              {/* Clean Reassurance Banner */}
+              <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300">
+                <MessageCircle className="w-4 h-4 text-[#25D366] shrink-0" />
+                <span>Direct WhatsApp consultation & order confirmation with our technicians</span>
               </div>
 
-              {/* Driver Account Information */}
-              {currentUser ? (
-                <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-[#e50914]/20 border border-[#e50914]/40 flex items-center justify-center text-[#e50914]">
-                      <User className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                        <span>{currentUser.fullName}</span>
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                      </div>
-                      <div className="text-[10px] font-mono text-neutral-400">{currentUser.email}</div>
-                    </div>
+              {/* Logged in user info badge */}
+              {currentUser && (
+                <div className="px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2">
+                    <User className="w-3.5 h-3.5 text-[#e50914]" />
+                    <span className="text-white font-medium">{currentUser.fullName}</span>
+                    <span className="text-neutral-400 font-mono text-[11px]">({currentUser.email})</span>
                   </div>
-                  <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                    Active Driver
-                  </span>
-                </div>
-              ) : (
-                <div className="p-4 rounded-xl bg-gradient-to-br from-[#181818] to-black border border-[#e50914]/30 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs font-bold text-white uppercase tracking-wider font-mono">
-                      <User className="w-4 h-4 text-[#e50914]" />
-                      <span>Driver Account Setup</span>
-                    </div>
-                    <span className="text-[10px] text-emerald-400 font-mono font-bold bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-500/30">
-                      Auto-Registered
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-neutral-400 leading-snug">
-                    Enter your email and create a password to set up your Slidescoiety Driver Account so this build, orders, and technician updates are saved directly to your profile.
-                  </p>
-                  <div className="grid grid-cols-2 gap-3 pt-1">
-                    <div className="col-span-2 sm:col-span-1">
-                      <label className="block text-[11px] font-mono uppercase text-neutral-400 mb-1">
-                        Driver Email *
-                      </label>
-                      <input
-                        type="email"
-                        required={!currentUser}
-                        value={accountEmail}
-                        onChange={(e) => setAccountEmail(e.target.value)}
-                        placeholder="driver@example.com"
-                        className="w-full bg-black/60 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-[#e50914]"
-                      />
-                    </div>
-                    <div className="col-span-2 sm:col-span-1">
-                      <label className="block text-[11px] font-mono uppercase text-neutral-400 mb-1">
-                        Create Password *
-                      </label>
-                      <input
-                        type="password"
-                        required={!currentUser}
-                        minLength={8}
-                        value={accountPassword}
-                        onChange={(e) => setAccountPassword(e.target.value)}
-                        placeholder="8+ letters & numbers"
-                        className="w-full bg-black/60 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-[#e50914]"
-                      />
-                    </div>
-                  </div>
+                  <span className="text-[10px] font-mono text-emerald-400">Signed In</span>
                 </div>
               )}
 
-              {/* Delivery Details */}
+              {/* Delivery Details Form */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-neutral-300">
                   <MapPin className="w-4 h-4 text-[#e50914]" />
-                  <span>Shipping Address</span>
+                  <span>Delivery Address</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="col-span-2">
                     <label className="block text-[11px] font-mono uppercase text-neutral-400 mb-1">
-                      Recipient Full Name *
+                      Full Name *
                     </label>
                     <input
                       type="text"
@@ -567,9 +458,9 @@ export default function CartDrawer({
                     />
                   </div>
 
-                  <div className="col-span-2">
+                  <div className="col-span-2 sm:col-span-1">
                     <label className="block text-[11px] font-mono uppercase text-neutral-400 mb-1">
-                      Contact Phone *
+                      Phone / WhatsApp *
                     </label>
                     <input
                       type="tel"
@@ -577,6 +468,19 @@ export default function CartDrawer({
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="+91 98765 43210"
+                      className="w-full bg-black/60 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-[#e50914]"
+                    />
+                  </div>
+
+                  <div className="col-span-2 sm:col-span-1">
+                    <label className="block text-[11px] font-mono uppercase text-neutral-400 mb-1">
+                      Email (Optional)
+                    </label>
+                    <input
+                      type="email"
+                      value={accountEmail}
+                      onChange={(e) => setAccountEmail(e.target.value)}
+                      placeholder="For invoice & updates"
                       className="w-full bg-black/60 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-[#e50914]"
                     />
                   </div>
@@ -665,13 +569,13 @@ export default function CartDrawer({
 
                 <div>
                   <label className="block text-[11px] font-mono uppercase text-neutral-400 mb-1">
-                    Delivery Instructions / Rig Notes
+                    Special Instructions / Notes (Optional)
                   </label>
                   <textarea
                     rows={2}
                     value={customerNotes}
                     onChange={(e) => setCustomerNotes(e.target.value)}
-                    placeholder="e.g. Call before delivery, freight elevator available"
+                    placeholder="e.g. Call before dispatch, preferred delivery time"
                     className="w-full bg-black/60 border border-white/15 rounded-xl px-3.5 py-2 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-[#e50914]"
                   />
                 </div>
@@ -899,13 +803,13 @@ export default function CartDrawer({
                 <MessageCircle className="w-8 h-8 fill-[#25D366]" />
               </div>
               <div className="inline-block px-3 py-1 rounded-full bg-[#25D366]/15 border border-[#25D366]/30 text-[#25D366] text-xs font-mono font-bold uppercase tracking-wider">
-                WhatsApp Consultation Opened
+                WhatsApp Chat Ready
               </div>
               <h4 className="font-display font-black text-2xl uppercase tracking-tight text-white">
                 Order #{whatsappOrder.orderNumber} Registered!
               </h4>
               <p className="text-xs text-neutral-300 max-w-sm mx-auto leading-relaxed">
-                Your custom sim racing rig configuration has been saved to your Slidescoiety Driver Account. All hardware specifications have been prepared for our technician on WhatsApp.
+                Your order has been saved and opened in WhatsApp. Our team will verify your build and confirm delivery logistics with you.
               </p>
             </div>
 
@@ -916,7 +820,7 @@ export default function CartDrawer({
                 <span className="text-[#e50914] font-bold text-sm">{whatsappOrder.orderNumber}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-neutral-400">Driver</span>
+                <span className="text-neutral-400">Customer</span>
                 <span className="text-white font-bold">{recipientName}</span>
               </div>
               <div className="flex justify-between items-center">

@@ -6,17 +6,17 @@ import {
   cancelOrder,
   getOrderTracking
 } from '../controllers/order.controller.js';
-import { authenticateCustomer } from '../middleware/auth.middleware.js';
+import { authenticateCustomer, optionalAuthenticateCustomer } from '../middleware/auth.middleware.js';
 
 const router = Router();
 
-// All customer order endpoints require authentication
-router.use(authenticateCustomer);
+// Guest-friendly order creation (supports both registered customers and guest checkout)
+router.post('/', optionalAuthenticateCustomer, createOrder);
 
-router.post('/', createOrder);
-router.get('/', listOrders);
-router.get('/:id', getOrder);
-router.get('/:id/tracking', getOrderTracking);
-router.post('/:id/cancel', cancelOrder);
+// Account-specific order management requires authenticated driver session
+router.get('/', authenticateCustomer, listOrders);
+router.get('/:id', authenticateCustomer, getOrder);
+router.get('/:id/tracking', authenticateCustomer, getOrderTracking);
+router.post('/:id/cancel', authenticateCustomer, cancelOrder);
 
 export default router;

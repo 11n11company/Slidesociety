@@ -82,6 +82,54 @@ export async function authenticateCustomer(req, res, next) {
 }
 
 /**
+ * Optional customer authentication: sets req.user if a valid token is present,
+ * but allows unauthenticated guest requests to proceed smoothly.
+ */
+export async function optionalAuthenticateCustomer(req, res, next) {
+  try {
+    let token = null;
+
+    if (req.cookies && req.cookies.slidescoiety_session) {
+      token = req.cookies.slidescoiety_session;
+    } else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+      token = req.headers.authorization.split(' ')[1];
+    }
+
+    if (!token) {
+      req.user = null;
+      return next();
+    }
+
+    const decoded = verifySessionToken(token);
+    if (!decoded || !decoded.id) {
+      req.user = null;
+      return next();
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        role: true,
+        isVerified: true,
+        phone: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    });
+
+    req.user = user || null;
+    next();
+  } catch (err) {
+    logger.warn('Optional authentication error, proceeding as guest:', err.message);
+    req.user = null;
+    next();
+  }
+}
+
+/**
  * Role-Based Access Control Middleware
  */
 export function requireRole(...allowedRoles) {
