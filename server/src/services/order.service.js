@@ -149,9 +149,20 @@ export async function createCustomerOrder(userId, input) {
 
   if (validated.items && validated.items.length > 0) {
     for (const it of validated.items) {
-      const prod = await prisma.product.findUnique({
+      let prod = await prisma.product.findUnique({
         where: { id: it.productId }
       });
+      // Fallback fuzzy match for truncated IDs or legacy slug handles
+      if (!prod && it.productId) {
+        prod = await prisma.product.findFirst({
+          where: {
+            OR: [
+              { id: { startsWith: it.productId.slice(0, 30) } },
+              { id: { contains: it.productId.slice(0, 20) } }
+            ]
+          }
+        });
+      }
       if (prod) {
         cartItems.push({
           productId: prod.id,

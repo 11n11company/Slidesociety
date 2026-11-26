@@ -24,7 +24,7 @@ export const orderApi = {
    * Place a new order with shipping address, notes, and idempotency key
    * POST /api/v1/orders
    */
-  async createOrder({ shippingAddress, shippingAddressId, customerNotes, idempotencyKey }) {
+  async createOrder(data) {
     const res = await fetch(API_BASE, {
       method: 'POST',
       headers: {
@@ -32,12 +32,7 @@ export const orderApi = {
         'Accept': 'application/json'
       },
       credentials: 'include',
-      body: JSON.stringify({
-        shippingAddress,
-        shippingAddressId,
-        customerNotes,
-        idempotencyKey
-      })
+      body: JSON.stringify(data)
     });
     return handleResponse(res);
   },
