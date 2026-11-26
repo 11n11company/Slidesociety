@@ -58,6 +58,15 @@ export default function CartDrawer({
     return () => window.removeEventListener('slidescoiety:products-updated', handleUpdated);
   }, []);
 
+  // Checkout Auth Pop-up State
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState('register'); // 'register' | 'login'
+  const [authFullName, setAuthFullName] = useState('');
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState('');
+
   // Account creation & login fields
   const [accountEmail, setAccountEmail] = useState('');
   const [accountPassword, setAccountPassword] = useState('');
@@ -121,6 +130,14 @@ export default function CartDrawer({
 
   // Pre-fill user data when navigating to checkout
   const handleProceedToCheckout = () => {
+    if (!currentUser) {
+      // Require customer to create an account or sign in via standard pop-up modal
+      setAuthError('');
+      setAuthModalMode('register');
+      setShowAuthModal(true);
+      return;
+    }
+
     if (currentUser) {
       if (!recipientName && currentUser.fullName) {
         setRecipientName(currentUser.fullName);
@@ -136,70 +153,86 @@ export default function CartDrawer({
     setStep('checkout');
   };
 
-  // WhatsApp Checkout Handler: Ensures account is created/logged in on website, registers order, then opens WhatsApp
+  // Auth Pop-up Form Handler
+  const handleAuthModalSubmit = async (e) => {
+    if (e) e.preventDefault();
+    setAuthError('');
+    setAuthLoading(true);
+
+    try {
+      if (authModalMode === 'register') {
+        if (!authFullName || authFullName.trim().length < 2) {
+          throw new Error('Please enter your full name.');
+        }
+        if (!authEmail || !authEmail.includes('@')) {
+          throw new Error('Please enter a valid email address.');
+        }
+        if (!authPassword || authPassword.length < 6) {
+          throw new Error('Password must be at least 6 characters.');
+        }
+
+        const res = await authApi.register({
+          fullName: authFullName.trim(),
+          email: authEmail.trim().toLowerCase(),
+          password: authPassword,
+          confirmPassword: authPassword
+        });
+        const user = res?.data?.user;
+        onAuthSuccess?.(user);
+        setRecipientName(user.fullName || authFullName.trim());
+        setAccountEmail(user.email || authEmail.trim());
+        setShowAuthModal(false);
+        setStep('checkout');
+        onShowToast?.(`Account created! Welcome, ${user.fullName}`);
+      } else {
+        if (!authEmail || !authEmail.includes('@')) {
+          throw new Error('Please enter your email address.');
+        }
+        if (!authPassword) {
+          throw new Error('Please enter your password.');
+        }
+
+        const res = await authApi.login({
+          email: authEmail.trim().toLowerCase(),
+          password: authPassword
+        });
+        const user = res?.data?.user;
+        onAuthSuccess?.(user);
+        setRecipientName(user.fullName || '');
+        setAccountEmail(user.email || authEmail.trim());
+        setShowAuthModal(false);
+        setStep('checkout');
+        onShowToast?.(`Welcome back, ${user.fullName}!`);
+      }
+    } catch (err) {
+      if (err.code === 'EMAIL_ALREADY_EXISTS') {
+        setAuthError('An account with this email already exists. Click "Sign In" below.');
+      } else {
+        setAuthError(err.message || 'Authentication failed. Please check your credentials.');
+      }
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  // WhatsApp Checkout Handler: Ensures account is active, registers order, then opens WhatsApp
   const handleWhatsAppCheckout = async (e) => {
     if (e) e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
+      if (!currentUser) {
+        setShowAuthModal(true);
+        throw new Error('Please sign in or create an account to finalize your order.');
+      }
+
       if (!recipientName || recipientName.trim().length < 2) {
         throw new Error('Please enter your full name.');
       }
       if (!phone || phone.trim().length < 7) {
         throw new Error('Please enter a valid contact phone number.');
       }
-
-      // 1. Account Requirement: Customer MUST have an account on website before going to WhatsApp
-      let activeUser = currentUser;
-      if (!activeUser) {
-        if (!accountEmail || !accountEmail.includes('@')) {
-          throw new Error('Please enter a valid email address to create your account.');
-        }
-        if (!accountPassword || accountPassword.length < 6) {
-          throw new Error('Please enter a password with at least 6 characters.');
-        }
-
-        if (isLoginMode) {
-          try {
-            const loginRes = await authApi.login({
-              email: accountEmail.trim().toLowerCase(),
-              password: accountPassword
-            });
-            activeUser = loginRes?.data?.user;
-            onAuthSuccess?.(activeUser);
-          } catch (loginErr) {
-            throw new Error(loginErr.message || 'Incorrect email or password. Please try again.');
-          }
-        } else {
-          try {
-            const regRes = await authApi.register({
-              fullName: recipientName.trim(),
-              email: accountEmail.trim().toLowerCase(),
-              password: accountPassword,
-              confirmPassword: accountPassword
-            });
-            activeUser = regRes?.data?.user;
-            onAuthSuccess?.(activeUser);
-          } catch (regErr) {
-            if (regErr.code === 'EMAIL_ALREADY_EXISTS') {
-              try {
-                const autoLog = await authApi.login({
-                  email: accountEmail.trim().toLowerCase(),
-                  password: accountPassword
-                });
-                activeUser = autoLog?.data?.user;
-                onAuthSuccess?.(activeUser);
-              } catch {
-                throw new Error('An account with this email already exists. Please verify your password or click "Sign in".');
-              }
-            } else {
-              throw new Error(regErr.message || 'Failed to create your account. Please try again.');
-            }
-          }
-        }
-      }
-
       if (!streetLine1 || streetLine1.trim().length < 3) {
         throw new Error('Please enter your street address.');
       }
@@ -212,6 +245,8 @@ export default function CartDrawer({
       if (!postalCode || postalCode.trim().length < 3) {
         throw new Error('Please enter your PIN code.');
       }
+
+      const activeUser = currentUser;
 
       // 2. Register order in database linked to customer account
       const idempotencyKey = `idemp_wa_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
@@ -479,71 +514,22 @@ export default function CartDrawer({
                 <span>Direct WhatsApp consultation & order confirmation with our technicians</span>
               </div>
 
-              {/* Customer Account Requirement */}
-              {currentUser ? (
-                <div className="px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2.5">
-                    <User className="w-4 h-4 text-[#e50914]" />
-                    <div>
-                      <div className="text-white font-bold">{currentUser.fullName}</div>
-                      <div className="text-neutral-400 font-mono text-[11px]">{currentUser.email}</div>
-                    </div>
+              {/* Authenticated Customer Status Badge */}
+              <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-[#e50914]/20 border border-[#e50914]/30 flex items-center justify-center text-[#e50914]">
+                    <User className="w-4 h-4" />
                   </div>
-                  <span className="text-[10px] font-mono text-emerald-400 font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-                    Logged In
-                  </span>
-                </div>
-              ) : (
-                <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-neutral-200">
-                      <User className="w-4 h-4 text-[#e50914]" />
-                      <span>{isLoginMode ? 'Sign In to Your Account' : 'Create Account'}</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsLoginMode(!isLoginMode);
-                        setError('');
-                      }}
-                      className="text-[11px] text-[#e50914] hover:underline"
-                    >
-                      {isLoginMode ? 'Need an account? Sign up' : 'Already registered? Sign in'}
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="col-span-2 sm:col-span-1">
-                      <label className="block text-[11px] font-mono uppercase text-neutral-400 mb-1">
-                        Email Address *
-                      </label>
-                      <input
-                        type="email"
-                        required
-                        value={accountEmail}
-                        onChange={(e) => setAccountEmail(e.target.value)}
-                        placeholder="your@email.com"
-                        className="w-full bg-black/60 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-[#e50914]"
-                      />
-                    </div>
-
-                    <div className="col-span-2 sm:col-span-1">
-                      <label className="block text-[11px] font-mono uppercase text-neutral-400 mb-1">
-                        {isLoginMode ? 'Password *' : 'Create Password *'}
-                      </label>
-                      <input
-                        type="password"
-                        required
-                        minLength={6}
-                        value={accountPassword}
-                        onChange={(e) => setAccountPassword(e.target.value)}
-                        placeholder={isLoginMode ? 'Enter password' : 'Min 6 characters'}
-                        className="w-full bg-black/60 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-[#e50914]"
-                      />
-                    </div>
+                  <div>
+                    <div className="text-white font-bold">{currentUser?.fullName || recipientName}</div>
+                    <div className="text-neutral-400 font-mono text-[11px]">{currentUser?.email || accountEmail}</div>
                   </div>
                 </div>
-              )}
+                <span className="text-[10px] font-mono text-emerald-400 font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-1">
+                  <CheckCircle className="w-3 h-3 text-emerald-400" />
+                  <span>Account Active</span>
+                </span>
+              </div>
 
               {/* Delivery Details Form */}
               <div className="space-y-4">
@@ -968,6 +954,165 @@ export default function CartDrawer({
           </div>
         )}
       </aside>
+
+      {/* Checkout Authentication Pop-up Modal */}
+      {showAuthModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div
+            onClick={() => setShowAuthModal(false)}
+            className="absolute inset-0 bg-black/85 backdrop-blur-md"
+          />
+
+          {/* Dialog Container */}
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Create an Account to Proceed"
+            className="relative z-10 w-full max-w-md bg-[#0f0003] border border-white/20 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 animate-scaleUp"
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-[#e50914]/20 border border-[#e50914]/40 flex items-center justify-center text-[#e50914] shrink-0">
+                  <User className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-display font-black text-xl uppercase tracking-tight text-white">
+                    {authModalMode === 'register' ? 'Create an Account' : 'Sign In to Proceed'}
+                  </h3>
+                  <p className="text-xs text-neutral-400 mt-0.5">
+                    {authModalMode === 'register'
+                      ? 'Please create an account to proceed with your order'
+                      : 'Sign in to access your details and continue'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAuthModal(false)}
+                className="p-1.5 rounded-full text-neutral-400 hover:text-white hover:bg-white/10 transition-colors"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Mode Switch Tabs */}
+            <div className="flex rounded-xl bg-black/60 p-1 border border-white/10">
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthModalMode('register');
+                  setAuthError('');
+                }}
+                className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${
+                  authModalMode === 'register'
+                    ? 'bg-[#e50914] text-white shadow-md shadow-[#e50914]/30'
+                    : 'text-neutral-400 hover:text-white'
+                }`}
+              >
+                Create Account
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthModalMode('login');
+                  setAuthError('');
+                }}
+                className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${
+                  authModalMode === 'login'
+                    ? 'bg-[#e50914] text-white shadow-md shadow-[#e50914]/30'
+                    : 'text-neutral-400 hover:text-white'
+                }`}
+              >
+                Sign In
+              </button>
+            </div>
+
+            {authError && (
+              <div className="p-3 rounded-xl bg-red-500/15 border border-red-500/40 text-xs text-red-200 flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                <span>{authError}</span>
+              </div>
+            )}
+
+            {/* Form */}
+            <form onSubmit={handleAuthModalSubmit} className="space-y-3.5">
+              {authModalMode === 'register' && (
+                <div>
+                  <label className="block text-[11px] font-mono uppercase text-neutral-400 mb-1">
+                    Full Name *
+                  </label>
+                  <div className="relative">
+                    <User className="w-4 h-4 text-neutral-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      required
+                      value={authFullName}
+                      onChange={(e) => setAuthFullName(e.target.value)}
+                      placeholder="e.g. Max Verstappen"
+                      className="w-full bg-black/60 border border-white/15 rounded-xl pl-10 pr-3.5 py-2.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-[#e50914]"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-[11px] font-mono uppercase text-neutral-400 mb-1">
+                  Email Address *
+                </label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-neutral-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="email"
+                    required
+                    value={authEmail}
+                    onChange={(e) => setAuthEmail(e.target.value)}
+                    placeholder="your@email.com"
+                    className="w-full bg-black/60 border border-white/15 rounded-xl pl-10 pr-3.5 py-2.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-[#e50914]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-mono uppercase text-neutral-400 mb-1">
+                  Password *
+                </label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-neutral-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    value={authPassword}
+                    onChange={(e) => setAuthPassword(e.target.value)}
+                    placeholder="Min 6 characters"
+                    className="w-full bg-black/60 border border-white/15 rounded-xl pl-10 pr-3.5 py-2.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-[#e50914]"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={authLoading}
+                className="w-full py-3.5 rounded-full bg-[#e50914] hover:bg-[#ff1f2d] text-white font-bold text-xs uppercase tracking-wider transition-all shadow-xl shadow-[#e50914]/30 flex items-center justify-center gap-2 disabled:opacity-50 mt-2"
+              >
+                {authLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Processing...</span>
+                  </>
+                ) : (
+                  <span>
+                    {authModalMode === 'register' ? 'Create Account & Proceed' : 'Sign In & Proceed'}
+                  </span>
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
