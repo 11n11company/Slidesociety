@@ -17,7 +17,7 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['"DM Sans"', 'system-ui', 'sans-serif'],
+        sans: ['"Inter"', '"DM Sans"', 'system-ui', '-apple-system', 'sans-serif'],
         display: ['"Barlow Condensed"', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'monospace']
       }

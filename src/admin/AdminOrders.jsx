@@ -634,7 +634,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
 
         {/* Status Filter */}
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <span className="text-[11px] font-mono uppercase text-slate-500 shrink-0">Status:</span>
+          <span className="text-xs font-medium text-slate-600 shrink-0">Status:</span>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -667,14 +667,14 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
         {loading ? (
           <div className="py-16 text-center text-slate-400 flex flex-col items-center justify-center space-y-2">
             <RefreshCw className="w-5 h-5 animate-spin text-[#e50914]" />
-            <span className="font-mono text-xs uppercase tracking-wider">Loading Orders...</span>
+            <span className="text-xs font-medium text-slate-600">Loading Orders...</span>
           </div>
         ) : error ? (
           <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
             {error}
           </div>
         ) : orders.length === 0 ? (
-          <div className="py-16 text-center text-slate-400 font-mono text-xs">
+          <div className="py-16 text-center text-slate-400 text-sm font-medium">
             No orders match the current filter criteria.
           </div>
         ) : (
@@ -682,7 +682,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-slate-200 text-slate-500 font-mono text-[10px] uppercase tracking-wider bg-slate-50">
+                  <tr className="border-b border-slate-200 text-slate-500 font-semibold text-xs uppercase tracking-wider bg-slate-50/50">
                     <th className="py-3 px-3">Order Number</th>
                     <th className="py-3 px-3">Customer</th>
                     <th className="py-3 px-3">Date</th>
@@ -697,26 +697,26 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                     const payStatus = ord.payments?.[0]?.status || (['CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED'].includes(ord.status) ? 'CAPTURED' : 'PENDING');
                     return (
                       <tr key={ord.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="py-3.5 px-3 font-mono font-bold text-slate-900">
+                        <td className="py-3.5 px-3 font-semibold text-slate-900">
                           {ord.orderNumber}
                         </td>
                         <td className="py-3.5 px-3">
                           <div className="font-medium text-slate-900">{ord.user?.fullName || 'Guest Customer'}</div>
-                          <div className="font-mono text-[10px] text-slate-500">{ord.user?.email || 'N/A'}</div>
+                          <div className="text-xs text-slate-500">{ord.user?.email || 'N/A'}</div>
                         </td>
-                        <td className="py-3.5 px-3 font-mono text-[11px] text-slate-600">
+                        <td className="py-3.5 px-3 text-xs text-slate-600">
                           {new Date(ord.createdAt).toLocaleDateString()}
                         </td>
-                        <td className="py-3.5 px-3 font-mono font-bold text-slate-900">
+                        <td className="py-3.5 px-3 font-bold text-slate-900">
                           {fmt(ord.totalAmount)}
                         </td>
                         <td className="py-3.5 px-3">
-                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase border ${getPaymentBadge(payStatus)}`}>
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-semibold uppercase border ${getPaymentBadge(payStatus)}`}>
                             {payStatus}
                           </span>
                         </td>
                         <td className="py-3.5 px-3">
-                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase border ${getStatusBadge(ord.status)}`}>
+                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase border ${getStatusBadge(ord.status)}`}>
                             {ord.status}
                           </span>
                         </td>
@@ -724,7 +724,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                           <button
                             type="button"
                             onClick={() => handleOpenDetail(ord.id)}
-                            className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-slate-100 hover:bg-[#e50914] text-slate-700 hover:text-white font-bold text-[11px] transition-colors"
+                            className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-slate-100 hover:bg-[#e50914] text-slate-700 hover:text-white font-semibold text-xs transition-colors"
                           >
                             <Eye className="w-3.5 h-3.5" />
                             <span>View</span>
@@ -779,7 +779,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
             <div className="flex items-center justify-between pb-4 border-b border-slate-200 mb-5 shrink-0">
               <div className="flex items-center gap-2.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#e50914]" />
-                <h3 className="font-display font-black text-xl sm:text-2xl uppercase tracking-tight text-slate-900">
+                <h3 className="font-bold text-xl sm:text-2xl text-slate-900 tracking-tight">
                   {selectedOrder ? `Order ${selectedOrder.orderNumber}` : 'Order Inspection'}
                 </h3>
               </div>
@@ -797,7 +797,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
               {orderLoading ? (
                 <div className="py-16 text-center text-slate-500 space-y-2">
                   <RefreshCw className="w-5 h-5 animate-spin text-[#e50914] mx-auto" />
-                  <div className="font-mono text-xs">Retrieving Order Telemetry...</div>
+                  <div className="text-xs">Retrieving order details...</div>
                 </div>
               ) : orderError ? (
                 <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
@@ -808,19 +808,19 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                   {/* Status Banner */}
                   <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <div className="text-[10px] font-mono uppercase text-slate-500">Current Status</div>
+                      <div className="text-xs font-semibold uppercase text-slate-500">Current Status</div>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-mono font-bold uppercase border ${getStatusBadge(selectedOrder.status)}`}>
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase border ${getStatusBadge(selectedOrder.status)}`}>
                           {selectedOrder.status}
                         </span>
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase border ${getPaymentBadge(selectedOrder.payments?.[0]?.status || 'PENDING')}`}>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold uppercase border ${getPaymentBadge(selectedOrder.payments?.[0]?.status || 'PENDING')}`}>
                           Payment: {selectedOrder.payments?.[0]?.status || 'PENDING'}
                         </span>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-[10px] font-mono uppercase text-slate-500">Total Grand Amount</div>
-                      <div className="text-lg font-mono font-black text-slate-900 mt-0.5">
+                      <div className="text-xs font-semibold uppercase text-slate-500">Total Grand Amount</div>
+                      <div className="text-xl font-bold text-slate-900 mt-0.5">
                         {fmt(selectedOrder.totalAmount)}
                       </div>
                     </div>
@@ -838,11 +838,11 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Customer Profile */}
                     <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-                      <div className="text-[10px] font-mono uppercase text-[#e50914] font-bold tracking-wider">
+                      <div className="text-xs font-bold uppercase tracking-wider text-[#e50914]">
                         Customer Driver
                       </div>
                       <div className="text-sm font-bold text-slate-900">{selectedOrder.user?.fullName}</div>
-                      <div className="text-xs font-mono text-slate-600">{selectedOrder.user?.email}</div>
+                      <div className="text-xs text-slate-600 font-medium">{selectedOrder.user?.email}</div>
                       {selectedOrder.user?.phone && (
                         <div className="text-xs text-slate-500">{selectedOrder.user.phone}</div>
                       )}
@@ -850,7 +850,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
 
                     {/* Shipping Address */}
                     <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
-                      <div className="text-[10px] font-mono uppercase text-[#e50914] font-bold tracking-wider">
+                      <div className="text-xs font-bold uppercase tracking-wider text-[#e50914]">
                         Shipping Address
                       </div>
                       {selectedOrder.shippingAddress ? (
@@ -861,7 +861,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                             {selectedOrder.shippingAddress.city}, {selectedOrder.shippingAddress.state} {selectedOrder.shippingAddress.postalCode}
                           </div>
                           <div>{selectedOrder.shippingAddress.country}</div>
-                          <div className="text-slate-500 font-mono text-[11px] mt-1">
+                          <div className="text-slate-500 text-xs mt-1">
                             Phone: {selectedOrder.shippingAddress.phone}
                           </div>
                         </div>
@@ -874,7 +874,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                   {/* Order Items & Fare Adjustment Card */}
                   <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
                     <div className="flex items-center justify-between">
-                      <div className="text-[10px] font-mono uppercase text-[#e50914] font-bold tracking-wider">
+                      <div className="text-xs font-bold uppercase tracking-wider text-[#e50914]">
                         Ordered Hardware &amp; Logistics Fare
                       </div>
                       {!isSupport && selectedOrder.status !== 'CANCELLED' && (
@@ -928,11 +928,11 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                             <div key={item.id} className="py-2.5 flex items-center justify-between text-xs">
                               <div>
                                 <div className="font-bold text-slate-900">{item.productName}</div>
-                                <div className="text-[10px] font-mono text-slate-500">
+                                <div className="text-xs text-slate-500">
                                   {item.categorySnapshot || item.productCategory} • Qty: {item.quantity} × {fmt(item.unitPrice)}
                                 </div>
                               </div>
-                              <div className="font-mono font-bold text-slate-900">
+                              <div className="font-semibold text-slate-900">
                                 {fmt(item.totalPrice || item.lineTotal || (item.unitPrice * item.quantity))}
                               </div>
                             </div>
@@ -940,7 +940,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                         </div>
 
                         {/* Financial Totals Breakdown */}
-                        <div className="pt-3 border-t border-slate-100 space-y-1.5 text-xs text-slate-600 font-mono">
+                        <div className="pt-3 border-t border-slate-100 space-y-1.5 text-xs text-slate-600 font-medium">
                           <div className="flex justify-between">
                             <span className="text-slate-500">Subtotal ({selectedOrder.items?.length || 0} items)</span>
                             <span className="text-slate-900 font-bold">{fmt(selectedOrder.subtotal)}</span>
@@ -973,19 +973,19 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                             <div key={idx} className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
                               <div className="flex-1 min-w-0">
                                 <div className="font-bold text-slate-900 truncate">{item.productName}</div>
-                                <div className="text-[10px] font-mono text-slate-500">{item.productCategory}</div>
+                                <div className="text-xs text-slate-500">{item.productCategory}</div>
                               </div>
 
                               <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
                                 {/* Unit price override */}
-                                <div className="flex items-center gap-1.5 font-mono">
+                                <div className="flex items-center gap-1.5">
                                   <span className="text-slate-500 text-[11px]">₹</span>
                                   <input
                                     type="number"
                                     min="0"
                                     value={item.unitPrice}
                                     onChange={(e) => handleUpdateItemPrice(idx, e.target.value)}
-                                    className="w-20 bg-white border border-slate-300 rounded-lg px-2 py-1 text-xs text-slate-900 text-right font-mono focus:outline-none focus:border-[#e50914]"
+                                    className="w-20 bg-white border border-slate-300 rounded-lg px-2 py-1 text-xs text-slate-900 text-right focus:outline-none focus:border-[#e50914]"
                                     title="Unit Price"
                                   />
                                 </div>
@@ -999,7 +999,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                                   >
                                     <Minus className="w-3 h-3" />
                                   </button>
-                                  <span className="px-2 text-xs font-mono font-bold text-slate-900">
+                                  <span className="px-2 text-xs font-semibold text-slate-900">
                                     {item.quantity}
                                   </span>
                                   <button
@@ -1012,7 +1012,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                                 </div>
 
                                 {/* Line total */}
-                                <div className="w-24 text-right font-mono font-bold text-slate-900">
+                                <div className="w-24 text-right font-semibold text-slate-900">
                                   {fmt(item.unitPrice * item.quantity)}
                                 </div>
 
@@ -1058,7 +1058,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                         {/* Fare & Discount Adjustments */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs">
                           <div>
-                            <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
+                            <label className="block text-xs font-semibold text-slate-700 mb-1">
                               Logistics / Shipping Fare (₹)
                             </label>
                             <input
@@ -1067,11 +1067,11 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                               value={editShipping}
                               onChange={(e) => setEditShipping(e.target.value)}
                               placeholder="0"
-                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 font-mono focus:outline-none focus:border-[#e50914]"
+                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#e50914]"
                             />
                           </div>
                           <div>
-                            <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
+                            <label className="block text-xs font-semibold text-slate-700 mb-1">
                               Special Discount (₹)
                             </label>
                             <input
@@ -1080,13 +1080,13 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                               value={editDiscount}
                               onChange={(e) => setEditDiscount(e.target.value)}
                               placeholder="0"
-                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 font-mono focus:outline-none focus:border-[#e50914]"
+                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#e50914]"
                             />
                           </div>
                         </div>
 
                         {/* Live calculation preview */}
-                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5 text-xs font-mono">
+                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5 text-xs font-medium">
                           {(() => {
                             const curSubtotal = editItems.reduce((sum, it) => sum + (Number(it.unitPrice) * Number(it.quantity)), 0);
                             const curTax = Math.round(curSubtotal * 0.18);
@@ -1140,11 +1140,11 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <CreditCard className="w-4 h-4 text-[#e50914]" />
-                        <span className="text-[10px] font-mono uppercase text-[#e50914] font-bold tracking-wider">
+                        <span className="text-xs font-bold uppercase tracking-wider text-[#e50914]">
                           Payment &amp; Order Confirmation
                         </span>
                       </div>
-                      <span className={`px-2.5 py-0.5 rounded text-[10px] font-mono font-bold uppercase border ${getPaymentBadge(selectedOrder.payments?.[0]?.status || 'PENDING')}`}>
+                      <span className={`px-2.5 py-0.5 rounded text-[10px] font-semibold uppercase border ${getPaymentBadge(selectedOrder.payments?.[0]?.status || 'PENDING')}`}>
                         {selectedOrder.payments?.[0]?.status || 'PENDING'}
                       </span>
                     </div>
@@ -1165,7 +1165,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
 
                     {/* Captured Payment Display */}
                     {selectedOrder.payments?.some(p => p.status === 'CAPTURED') ? (
-                      <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-mono space-y-1">
+                      <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs space-y-1">
                         <div className="text-emerald-700 font-bold flex items-center gap-1.5">
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           <span>Payment Captured &amp; Verified</span>
@@ -1187,7 +1187,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                             <div>
-                              <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
+                              <label className="block text-xs font-semibold text-slate-700 mb-1">
                                 Payment Method *
                               </label>
                               <select
@@ -1204,7 +1204,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                             </div>
 
                             <div>
-                              <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
+                              <label className="block text-xs font-semibold text-slate-700 mb-1">
                                 Amount Paid (₹) *
                               </label>
                               <input
@@ -1213,12 +1213,12 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                                 required
                                 value={payAmount}
                                 onChange={(e) => setPayAmount(e.target.value)}
-                                className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 font-mono focus:outline-none focus:border-[#e50914]"
+                                className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-[#e50914]"
                               />
                             </div>
 
                             <div>
-                              <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
+                              <label className="block text-xs font-semibold text-slate-700 mb-1">
                                 Transaction / UTR Ref *
                               </label>
                               <input
@@ -1227,12 +1227,12 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                                 value={payRef}
                                 onChange={(e) => setPayRef(e.target.value)}
                                 placeholder="e.g. UPI/492019481928 or NEFT UTR"
-                                className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 font-mono focus:outline-none focus:border-[#e50914]"
+                                className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-[#e50914]"
                               />
                             </div>
 
                             <div>
-                              <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
+                              <label className="block text-xs font-semibold text-slate-700 mb-1">
                                 Admin Notes (Optional)
                               </label>
                               <input
@@ -1253,7 +1253,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                               onChange={(e) => setPayAutoConfirm(e.target.checked)}
                               className="rounded border-slate-300 bg-white text-[#e50914] focus:ring-0"
                             />
-                            <label htmlFor="autoConfirmOrder" className="text-xs text-slate-700 font-mono">
+                            <label htmlFor="autoConfirmOrder" className="text-xs text-slate-700">
                               Set Order Status to <strong className="text-emerald-700 font-semibold">CONFIRMED</strong> immediately
                             </label>
                           </div>
@@ -1276,12 +1276,12 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <FileText className="w-4 h-4 text-[#e50914]" />
-                        <span className="text-[10px] font-mono uppercase text-[#e50914] font-bold tracking-wider">
+                        <span className="text-xs font-bold uppercase tracking-wider text-[#e50914]">
                           Tax Invoice &amp; Customer Bill
                         </span>
                       </div>
                       {selectedOrder.invoice && (
-                        <span className="text-emerald-700 font-mono text-xs font-bold">
+                        <span className="text-emerald-700 text-xs font-bold">
                           {selectedOrder.invoice.invoiceNumber}
                         </span>
                       )}
@@ -1297,7 +1297,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                     <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
                       <div>
                         {selectedOrder.invoice ? (
-                          <div className="text-slate-600 font-mono text-[11px]">
+                          <div className="text-slate-600 text-xs">
                             Generated on {new Date(selectedOrder.invoice.createdAt).toLocaleDateString()} • Total: <strong className="text-slate-900">{fmt(selectedOrder.invoice.totalAmount)}</strong>
                           </div>
                         ) : (
@@ -1365,7 +1365,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                                 type="button"
                                 disabled={generatingInvoice}
                                 onClick={handleGenerateInvoice}
-                                className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 text-xs font-mono transition-colors flex items-center gap-1"
+                                className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 text-xs font-medium transition-colors flex items-center gap-1"
                                 title="Regenerate invoice if items or fare were updated"
                               >
                                 <RefreshCw className={`w-3 h-3 ${generatingInvoice ? 'animate-spin' : ''}`} />
@@ -1383,12 +1383,12 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Truck className="w-4 h-4 text-[#e50914]" />
-                        <span className="text-[10px] font-mono uppercase text-[#e50914] font-bold tracking-wider">
+                        <span className="text-xs font-bold uppercase tracking-wider text-[#e50914]">
                           Shipment &amp; Logistics Management
                         </span>
                       </div>
                       {selectedOrder.shipment && (
-                        <span className={`px-2.5 py-0.5 rounded text-[10px] font-mono font-bold uppercase border ${getShipmentStatusBadge(selectedOrder.shipment.status)}`}>
+                        <span className={`px-2.5 py-0.5 rounded text-[10px] font-semibold uppercase border ${getShipmentStatusBadge(selectedOrder.shipment.status)}`}>
                           {selectedOrder.shipment.status.replace(/_/g, ' ')}
                         </span>
                       )}
@@ -1413,7 +1413,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                         {!isEditingShipment ? (
                           <>
                             {/* Shipment metadata display */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs bg-slate-50 p-3.5 rounded-xl border border-slate-200 font-mono">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs bg-slate-50 p-3.5 rounded-xl border border-slate-200">
                               <div>
                                 <span className="text-slate-500 block text-[10px] uppercase">Courier Partner</span>
                                 <span className="font-bold text-slate-900 text-sm">{selectedOrder.shipment.courierName}</span>
@@ -1495,7 +1495,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                               <button
                                 type="button"
                                 onClick={() => setIsEditingShipment(false)}
-                                className="text-slate-500 hover:text-slate-800 text-xs font-mono"
+                                className="text-slate-500 hover:text-slate-800 text-xs font-medium"
                               >
                                 Cancel
                               </button>
@@ -1503,7 +1503,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                               <div>
-                                <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
+                                <label className="block text-xs font-semibold text-slate-700 mb-1">
                                   Courier Partner *
                                 </label>
                                 <input
@@ -1517,7 +1517,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                               </div>
 
                               <div>
-                                <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
+                                <label className="block text-xs font-semibold text-slate-700 mb-1">
                                   Tracking / AWB Number *
                                 </label>
                                 <input
@@ -1531,7 +1531,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                               </div>
 
                               <div>
-                                <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
+                                <label className="block text-xs font-semibold text-slate-700 mb-1">
                                   Tracking Link / URL (Optional)
                                 </label>
                                 <input
@@ -1544,7 +1544,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                               </div>
 
                               <div>
-                                <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
+                                <label className="block text-xs font-semibold text-slate-700 mb-1">
                                   Estimated Delivery Date (Optional)
                                 </label>
                                 <input
@@ -1556,7 +1556,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                               </div>
 
                               <div>
-                                <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
+                                <label className="block text-xs font-semibold text-slate-700 mb-1">
                                   Shipment Status
                                 </label>
                                 <select
@@ -1575,7 +1575,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                               </div>
 
                               <div>
-                                <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
+                                <label className="block text-xs font-semibold text-slate-700 mb-1">
                                   Dispatcher Notes (Optional)
                                 </label>
                                 <input
@@ -1611,7 +1611,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                       <div>
                         {/* Prepare Shipment Form or Notice */}
                         {selectedOrder.status === 'CANCELLED' ? (
-                          <div className="text-xs text-slate-400 font-mono">
+                          <div className="text-xs text-slate-500">
                             Order is cancelled. Consignments cannot be dispatched for cancelled orders.
                           </div>
                         ) : selectedOrder.payments?.some(p => p.status === 'CAPTURED') ? (
@@ -1642,7 +1642,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                                   </div>
                                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                                     <div>
-                                      <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
+                                      <label className="block text-xs font-semibold text-slate-700 mb-1">
                                         Courier Partner *
                                       </label>
                                       <input
@@ -1655,7 +1655,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                                       />
                                     </div>
                                     <div>
-                                      <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
+                                      <label className="block text-xs font-semibold text-slate-700 mb-1">
                                         Tracking / AWB Number *
                                       </label>
                                       <input
@@ -1668,7 +1668,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                                       />
                                     </div>
                                     <div>
-                                      <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
+                                      <label className="block text-xs font-semibold text-slate-700 mb-1">
                                         Tracking Link / URL (Optional)
                                       </label>
                                       <input
@@ -1680,7 +1680,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                                       />
                                     </div>
                                     <div>
-                                      <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
+                                      <label className="block text-xs font-semibold text-slate-700 mb-1">
                                         Estimated Delivery Date (Optional)
                                       </label>
                                       <input
@@ -1691,7 +1691,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                                       />
                                     </div>
                                     <div className="sm:col-span-2">
-                                      <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
+                                      <label className="block text-xs font-semibold text-slate-700 mb-1">
                                         Dispatcher Notes (Optional)
                                       </label>
                                       <input
@@ -1715,7 +1715,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                             </div>
                           )
                         ) : (
-                          <div className="text-xs text-slate-500 font-mono">
+                          <div className="text-xs text-slate-500">
                             Order requires verified captured payment before consignment dispatch can be prepared.
                           </div>
                         )}
@@ -1725,7 +1725,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
 
                   {/* Audit Status History */}
                   <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
-                    <div className="text-[10px] font-mono uppercase text-slate-500 tracking-wider font-semibold">
+                    <div className="text-xs font-semibold uppercase text-slate-500 tracking-wider">
                       Immutable Audit History Trail
                     </div>
                     <div className="space-y-2">
@@ -1733,7 +1733,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                         <div key={h.id} className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-start justify-between text-xs">
                           <div>
                             <div className="flex items-center gap-2">
-                              <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase border ${getStatusBadge(h.toStatus)}`}>
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase border ${getStatusBadge(h.toStatus)}`}>
                                 {h.fromStatus ? `${h.fromStatus} → ${h.toStatus}` : h.toStatus}
                               </span>
                               {h.changedByUser && (
@@ -1748,7 +1748,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                               </div>
                             )}
                           </div>
-                          <span className="text-[10px] font-mono text-slate-400 shrink-0">
+                          <span className="text-xs text-slate-400 shrink-0">
                             {new Date(h.createdAt).toLocaleString()}
                           </span>
                         </div>

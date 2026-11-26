@@ -160,17 +160,17 @@ export default function AdminInvoices({ currentUser }) {
         {loading ? (
           <div className="py-16 text-center text-slate-500 flex flex-col items-center justify-center space-y-2">
             <RefreshCw className="w-5 h-5 animate-spin text-[#e50914]" />
-            <span className="font-mono text-xs uppercase tracking-wider">Loading Issued Invoices...</span>
+            <span className="text-xs font-medium text-slate-600">Loading Issued Invoices...</span>
           </div>
         ) : invoices.length === 0 ? (
-          <div className="py-16 text-center text-slate-400 font-mono text-xs">
+          <div className="py-16 text-center text-slate-400 text-sm font-medium">
             No tax invoices generated yet. Invoices generate automatically once an order payment is captured.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-slate-200 text-slate-500 font-mono text-[10px] uppercase tracking-wider bg-slate-50/50">
+                <tr className="border-b border-slate-200 text-slate-500 font-semibold text-xs uppercase tracking-wider bg-slate-50/50">
                   <th className="py-3 px-3">Invoice Number</th>
                   <th className="py-3 px-3">Order Number</th>
                   <th className="py-3 px-3">Customer</th>
@@ -183,24 +183,24 @@ export default function AdminInvoices({ currentUser }) {
               <tbody className="divide-y divide-slate-100">
                 {invoices.map((inv) => (
                   <tr key={inv.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="py-3.5 px-3 font-mono font-bold text-[#e50914]">
+                    <td className="py-3.5 px-3 font-semibold text-[#e50914]">
                       {inv.invoiceNumber}
                     </td>
-                    <td className="py-3.5 px-3 font-mono text-slate-600">
+                    <td className="py-3.5 px-3 text-xs text-slate-600">
                       {inv.orderNumber}
                     </td>
                     <td className="py-3.5 px-3">
                       <div className="font-medium text-slate-900">{inv.customerName}</div>
-                      <div className="font-mono text-[10px] text-slate-500">{inv.customerEmail}</div>
+                      <div className="text-xs text-slate-500">{inv.customerEmail}</div>
                     </td>
-                    <td className="py-3.5 px-3 font-mono text-[11px] text-slate-500">
+                    <td className="py-3.5 px-3 text-xs text-slate-500">
                       {new Date(inv.issueDate).toLocaleDateString()}
                     </td>
-                    <td className="py-3.5 px-3 font-mono font-bold text-slate-900">
+                    <td className="py-3.5 px-3 font-bold text-slate-900">
                       {fmt(inv.amount)}
                     </td>
                     <td className="py-3.5 px-3">
-                      <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase border bg-slate-100 text-slate-700 border-slate-200">
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase border bg-slate-100 text-slate-700 border-slate-200">
                         {inv.emailStatus}
                       </span>
                     </td>
@@ -210,7 +210,7 @@ export default function AdminInvoices({ currentUser }) {
                           type="button"
                           disabled={downloadingId === inv.id}
                           onClick={() => handleDownload(inv)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-[#e50914] text-slate-700 hover:text-white border border-slate-200 font-bold text-[11px] transition-colors disabled:opacity-50"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-[#e50914] text-slate-700 hover:text-white border border-slate-200 font-semibold text-xs transition-colors disabled:opacity-50"
                           title="Download PDF Invoice"
                         >
                           <Download className="w-3.5 h-3.5" />

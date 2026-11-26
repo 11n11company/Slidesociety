@@ -103,7 +103,7 @@ export default function AdminPayments({ currentUser, onNavigate }) {
         </form>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <span className="text-[11px] font-mono uppercase text-slate-500 shrink-0">Status:</span>
+          <span className="text-xs font-medium text-slate-600 shrink-0">Status:</span>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -134,21 +134,21 @@ export default function AdminPayments({ currentUser, onNavigate }) {
         {loading ? (
           <div className="py-16 text-center text-slate-500 flex flex-col items-center justify-center space-y-2">
             <RefreshCw className="w-5 h-5 animate-spin text-[#e50914]" />
-            <span className="font-mono text-xs uppercase tracking-wider">Loading Payment Audits...</span>
+            <span className="text-xs font-medium text-slate-600">Loading Payment Audits...</span>
           </div>
         ) : error ? (
           <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
             {error}
           </div>
         ) : payments.length === 0 ? (
-          <div className="py-16 text-center text-slate-400 font-mono text-xs">
+          <div className="py-16 text-center text-slate-400 text-sm font-medium">
             No payment transaction records found.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-slate-200 text-slate-500 font-mono text-[10px] uppercase tracking-wider bg-slate-50/50">
+                <tr className="border-b border-slate-200 text-slate-500 font-semibold text-xs uppercase tracking-wider bg-slate-50/50">
                   <th className="py-3 px-3">Order Number</th>
                   <th className="py-3 px-3">Payment Reference</th>
                   <th className="py-3 px-3">Customer</th>
@@ -161,28 +161,28 @@ export default function AdminPayments({ currentUser, onNavigate }) {
               <tbody className="divide-y divide-slate-100">
                 {payments.map((p) => (
                   <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="py-3.5 px-3 font-mono font-bold text-slate-900">
+                    <td className="py-3.5 px-3 font-semibold text-slate-900">
                       {p.orderNumber}
                     </td>
-                    <td className="py-3.5 px-3 font-mono text-[11px] text-slate-600">
+                    <td className="py-3.5 px-3 text-xs text-slate-600">
                       {p.reference}
                     </td>
                     <td className="py-3.5 px-3">
                       <div className="font-medium text-slate-900">{p.customerName}</div>
-                      <div className="font-mono text-[10px] text-slate-500">{p.customerEmail}</div>
+                      <div className="text-xs text-slate-500">{p.customerEmail}</div>
                     </td>
-                    <td className="py-3.5 px-3 font-mono font-bold text-slate-900">
+                    <td className="py-3.5 px-3 font-bold text-slate-900">
                       {fmt(p.amount)}
                     </td>
-                    <td className="py-3.5 px-3 text-slate-600 font-mono text-[11px]">
+                    <td className="py-3.5 px-3 text-slate-600 text-xs">
                       {p.method}
                     </td>
                     <td className="py-3.5 px-3">
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase border ${getStatusBadge(p.status)}`}>
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase border ${getStatusBadge(p.status)}`}>
                         {p.status}
                       </span>
                     </td>
-                    <td className="py-3.5 px-3 text-right font-mono text-[11px] text-slate-500">
+                    <td className="py-3.5 px-3 text-right text-xs text-slate-500">
                       {new Date(p.date).toLocaleString()}
                     </td>
                   </tr>

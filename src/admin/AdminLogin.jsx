@@ -56,11 +56,11 @@ export default function AdminLogin({ onLoginSuccess, onNavigate }) {
           </div>
           <div className="flex items-center gap-2 mb-1">
             <span className="w-2 h-2 rounded-full bg-[#e50914]" />
-            <h2 className="font-display font-black text-2xl uppercase tracking-tight text-slate-900">
+            <h2 className="font-bold text-2xl text-slate-900 tracking-tight uppercase">
               SLIDESCOIETY
             </h2>
           </div>
-          <span className="font-mono text-[11px] font-bold text-[#e50914] uppercase tracking-widest">
+          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
             MANAGEMENT CONSOLE
           </span>
           <p className="text-xs text-slate-500 mt-1">
@@ -79,7 +79,7 @@ export default function AdminLogin({ onLoginSuccess, onNavigate }) {
         {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-mono font-medium uppercase tracking-wider text-slate-600 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
               Admin Email
             </label>
             <div className="relative">
@@ -97,7 +97,7 @@ export default function AdminLogin({ onLoginSuccess, onNavigate }) {
           </div>
 
           <div>
-            <label className="block text-xs font-mono font-medium uppercase tracking-wider text-slate-600 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
               Password
             </label>
             <div className="relative">
@@ -117,14 +117,14 @@ export default function AdminLogin({ onLoginSuccess, onNavigate }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl bg-[#e50914] hover:bg-[#ff1801] disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-md shadow-[#e50914]/20 mt-2 flex items-center justify-center gap-2"
+            className="w-full py-3 rounded-xl bg-[#e50914] hover:bg-[#ff1801] disabled:opacity-50 text-white font-semibold text-xs uppercase tracking-wider transition-all shadow-md shadow-[#e50914]/20 mt-2 flex items-center justify-center gap-2"
           >
             {loading ? (
               <span>Authenticating...</span>
             ) : (
               <>
                 <Lock className="w-4 h-4" />
-                <span>Enter Pit Wall Console</span>
+                <span>Enter Admin Console</span>
               </>
             )}
           </button>

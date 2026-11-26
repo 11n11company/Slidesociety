@@ -373,17 +373,17 @@ export default function AdminProducts({ currentUser }) {
         {loading ? (
           <div className="py-16 text-center text-slate-500 flex flex-col items-center justify-center space-y-2">
             <RefreshCw className="w-5 h-5 animate-spin text-[#e50914]" />
-            <span className="font-mono text-xs uppercase tracking-wider">Loading Catalog Products...</span>
+            <span className="text-xs font-medium text-slate-600">Loading Catalog Products...</span>
           </div>
         ) : products.length === 0 ? (
-          <div className="py-16 text-center text-slate-400 font-mono text-xs">
+          <div className="py-16 text-center text-slate-400 text-sm font-medium">
             No products found matching the criteria.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-slate-200 text-slate-500 font-mono text-[10px] uppercase tracking-wider bg-slate-50/50">
+                <tr className="border-b border-slate-200 text-slate-500 font-semibold text-xs uppercase tracking-wider bg-slate-50/50">
                   <th className="py-3 px-3">Product</th>
                   <th className="py-3 px-3">Category</th>
                   <th className="py-3 px-3">Price</th>
@@ -407,28 +407,28 @@ export default function AdminProducts({ currentUser }) {
                         />
                         <div className="min-w-0">
                           <div className="font-bold text-slate-900 truncate max-w-xs">{prod.name}</div>
-                          <div className="font-mono text-[10px] text-slate-500 truncate">{prod.id}</div>
+                          <div className="text-xs text-slate-500 truncate">{prod.id}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="py-3.5 px-3 text-slate-600 font-mono text-[11px]">
+                    <td className="py-3.5 px-3 text-slate-600 text-xs">
                       {prod.category}
                     </td>
-                    <td className="py-3.5 px-3 font-mono font-bold text-slate-900">
+                    <td className="py-3.5 px-3 font-bold text-slate-900">
                       {fmt(prod.priceInr || prod.price)}
                     </td>
-                    <td className="py-3.5 px-3 font-mono">
+                    <td className="py-3.5 px-3 text-xs">
                       <span className={prod.stockQuantity <= 0 ? 'text-rose-600 font-bold' : prod.stockQuantity <= 5 ? 'text-amber-600 font-bold' : 'text-slate-600'}>
                         {prod.stockQuantity} units
                       </span>
                     </td>
                     <td className="py-3.5 px-3">
                       {prod.isAvailable ? (
-                        <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase border bg-emerald-50 text-emerald-700 border-emerald-200">
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase border bg-emerald-50 text-emerald-700 border-emerald-200">
                           Active
                         </span>
                       ) : (
-                        <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase border bg-slate-100 text-slate-600 border-slate-200">
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase border bg-slate-100 text-slate-600 border-slate-200">
                           Deactivated
                         </span>
                       )}
@@ -454,7 +454,7 @@ export default function AdminProducts({ currentUser }) {
                           </button>
                         </div>
                       ) : (
-                        <span className="text-[10px] font-mono text-slate-400">Read Only</span>
+                        <span className="text-xs text-slate-400">Read Only</span>
                       )}
                     </td>
                   </tr>
@@ -476,7 +476,7 @@ export default function AdminProducts({ currentUser }) {
             <div className="flex items-center justify-between pb-4 border-b border-slate-200 mb-5 shrink-0">
               <div className="flex items-center gap-2.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#e50914]" />
-                <h3 className="font-display font-black text-xl uppercase tracking-tight text-slate-900">
+                <h3 className="font-bold text-xl text-slate-900 tracking-tight">
                   {isEditing ? `Edit Product: ${name}` : 'Add Catalog Product'}
                 </h3>
               </div>
@@ -499,7 +499,7 @@ export default function AdminProducts({ currentUser }) {
             <form onSubmit={handleFormSubmit} className="flex-1 overflow-y-auto space-y-4 pr-1">
               {!isEditing && (
                 <div>
-                  <label className="block text-[10px] font-mono uppercase text-slate-600 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
                     Product Slug ID (lowercase-hyphens)
                   </label>
                   <input
@@ -508,13 +508,13 @@ export default function AdminProducts({ currentUser }) {
                     value={id}
                     onChange={(e) => setId(e.target.value)}
                     placeholder="e.g. active-pedal-v2"
-                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 font-mono placeholder-slate-400 focus:outline-none focus:border-[#e50914]"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#e50914]"
                   />
                 </div>
               )}
 
               <div>
-                <label className="block text-[10px] font-mono uppercase text-slate-600 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Product Name / Title
                 </label>
                 <input
@@ -529,7 +529,7 @@ export default function AdminProducts({ currentUser }) {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-mono uppercase text-slate-600 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
                     Category
                   </label>
                   <select
@@ -557,7 +557,7 @@ export default function AdminProducts({ currentUser }) {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-mono uppercase text-slate-600 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
                     Price (INR ₹)
                   </label>
                   <input
@@ -568,14 +568,14 @@ export default function AdminProducts({ currentUser }) {
                     value={priceInr}
                     onChange={(e) => setPriceInr(e.target.value)}
                     placeholder="e.g. 48999"
-                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 font-mono placeholder-slate-400 focus:outline-none focus:border-[#e50914]"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#e50914]"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-mono uppercase text-slate-600 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
                     Stock Quantity
                   </label>
                   <input
@@ -584,18 +584,18 @@ export default function AdminProducts({ currentUser }) {
                     required
                     value={stockQuantity}
                     onChange={(e) => setStockQuantity(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 font-mono focus:outline-none focus:border-[#e50914]"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#e50914]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-mono uppercase text-slate-600 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
                     Catalog Availability
                   </label>
                   <button
                     type="button"
                     onClick={() => setIsAvailable(!isAvailable)}
-                    className={`w-full py-2 px-3 rounded-xl border text-xs font-mono font-bold uppercase transition-all flex items-center justify-center gap-2 ${
+                    className={`w-full py-2 px-3 rounded-xl border text-xs font-semibold uppercase transition-all flex items-center justify-center gap-2 ${
                       isAvailable
                         ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
                         : 'bg-slate-100 border-slate-300 text-slate-600'
@@ -608,7 +608,7 @@ export default function AdminProducts({ currentUser }) {
               </div>
 
               <div>
-                <label className="block text-[10px] font-mono uppercase text-slate-600 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Product Image / Photo
                 </label>
 
@@ -636,12 +636,12 @@ export default function AdminProducts({ currentUser }) {
                   ) : (
                     <div className="flex flex-col items-center justify-center text-slate-400 gap-1.5">
                       <Image className="w-8 h-8 opacity-40" />
-                      <span className="text-[11px] font-mono">No photo selected</span>
+                      <span className="text-xs">No photo selected</span>
                     </div>
                   )}
 
                   {imageUrl && imageMeta && (
-                    <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-white/90 backdrop-blur-md border border-slate-200 font-mono text-[10px] text-slate-700 pointer-events-none shadow-sm">
+                    <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-white/90 backdrop-blur-md border border-slate-200 text-xs font-medium text-slate-700 pointer-events-none shadow-sm">
                       {imageMeta.width} × {imageMeta.height} px ({imageMeta.ratio}:1)
                     </span>
                   )}
@@ -664,7 +664,7 @@ export default function AdminProducts({ currentUser }) {
                 {/* Upload from Device or Paste URL Controls */}
                 <div className="space-y-2">
                   <div>
-                    <label className="cursor-pointer flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-300 text-xs font-mono font-bold text-slate-700 transition-all shadow-sm">
+                    <label className="cursor-pointer flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-300 text-xs font-semibold text-slate-700 transition-all shadow-sm">
                       <Upload className="w-3.5 h-3.5 text-[#e50914]" />
                       <span>Upload Photo from Device (PNG / JPG / WEBP)</span>
                       <input
@@ -677,7 +677,7 @@ export default function AdminProducts({ currentUser }) {
                   </div>
 
                   <div>
-                    <label className="block text-[9px] font-mono uppercase text-slate-500 mb-0.5">
+                    <label className="block text-xs font-medium text-slate-600 mb-0.5">
                       Or Direct Image URL / Path
                     </label>
                     <input
@@ -693,7 +693,7 @@ export default function AdminProducts({ currentUser }) {
               </div>
 
               <div>
-                <label className="block text-[10px] font-mono uppercase text-slate-600 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Specifications & Description
                 </label>
                 <textarea
@@ -736,7 +736,7 @@ export default function AdminProducts({ currentUser }) {
           <div className="relative z-10 w-full max-w-md bg-white border border-rose-200 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-4">
             <div className="flex items-center gap-2.5 text-rose-600">
               <AlertCircle className="w-5 h-5 shrink-0" />
-              <h3 className="font-display font-black text-xl uppercase tracking-tight text-slate-900">
+              <h3 className="font-bold text-xl text-slate-900 tracking-tight">
                 Deactivate / Delete Product
               </h3>
             </div>

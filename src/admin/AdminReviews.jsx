@@ -125,9 +125,9 @@ export default function AdminReviews({ currentUser }) {
       {/* Header & Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="font-display font-black text-2xl uppercase tracking-tight text-slate-900 flex items-center gap-2.5">
+          <h2 className="font-bold text-xl sm:text-2xl text-slate-900 tracking-tight flex items-center gap-2.5">
             <span>Customer Review Moderation</span>
-            <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 font-mono">
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 font-semibold">
               {pagination.totalCount} Total
             </span>
           </h2>
@@ -139,7 +139,7 @@ export default function AdminReviews({ currentUser }) {
         <button
           type="button"
           onClick={() => loadReviews(pagination.page)}
-          className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-mono uppercase tracking-wider flex items-center gap-2 self-start sm:self-auto transition-all shadow-sm"
+          className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold uppercase tracking-wider flex items-center gap-2 self-start sm:self-auto transition-all shadow-sm"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#e50914]' : ''}`} />
           <span>Refresh</span>
@@ -170,7 +170,7 @@ export default function AdminReviews({ currentUser }) {
               key={st}
               type="button"
               onClick={() => setStatusFilter(st)}
-              className={`px-3 py-1.5 text-xs font-bold font-mono uppercase tracking-wider rounded-lg transition-all ${
+              className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-lg transition-all ${
                 statusFilter === st
                   ? 'bg-[#e50914] text-white shadow-sm'
                   : 'text-slate-600 hover:text-slate-900'
@@ -198,12 +198,12 @@ export default function AdminReviews({ currentUser }) {
       {loading ? (
         <div className="py-20 flex flex-col items-center justify-center gap-3">
           <RefreshCw className="w-8 h-8 animate-spin text-[#e50914]" />
-          <span className="font-mono text-xs uppercase tracking-wider text-slate-500">Loading reviews...</span>
+          <span className="text-xs uppercase tracking-wider text-slate-500 font-semibold">Loading reviews...</span>
         </div>
       ) : reviews.length === 0 ? (
         <div className="py-20 text-center border border-slate-200 rounded-2xl bg-white shadow-sm">
           <MessageSquare className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-          <h4 className="font-display font-black text-lg uppercase text-slate-900 mb-1">No Reviews Found</h4>
+          <h4 className="font-bold text-lg text-slate-900 mb-1">No Reviews Found</h4>
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
             No customer reviews match the selected status filter or search parameters.
           </p>
@@ -226,8 +226,8 @@ export default function AdminReviews({ currentUser }) {
                     />
                   )}
                   <div className="min-w-0">
-                    <span className="text-[10px] font-mono uppercase text-slate-500 block truncate">
-                      {rev.product?.category} // Order: {rev.order?.orderNumber || 'Verified Order'}
+                    <span className="text-xs text-slate-500 block truncate">
+                      {rev.product?.category} • Order: {rev.order?.orderNumber || 'Verified Order'}
                     </span>
                     <h4 className="font-bold text-sm text-slate-900 truncate">{rev.product?.name}</h4>
                     <span className="text-xs text-slate-500">
@@ -237,9 +237,9 @@ export default function AdminReviews({ currentUser }) {
                 </div>
 
                 {/* Status Badge & Timestamp */}
-                <div className="flex items-center gap-2 self-start sm:self-auto font-mono text-[10px]">
+                <div className="flex items-center gap-2 self-start sm:self-auto text-xs">
                   <span
-                    className={`px-2.5 py-1 rounded-full uppercase font-bold border ${
+                    className={`px-2.5 py-1 rounded-full uppercase font-semibold border ${
                       rev.status === 'APPROVED'
                         ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                         : rev.status === 'REJECTED'
@@ -268,7 +268,7 @@ export default function AdminReviews({ currentUser }) {
                 </div>
                 <p className="text-xs text-slate-700 leading-relaxed">{rev.comment}</p>
                 {rev.moderationNote && (
-                  <p className="text-[11px] font-mono text-slate-500 border-t border-slate-200 pt-1.5 mt-2">
+                  <p className="text-xs text-slate-600 border-t border-slate-200 pt-1.5 mt-2">
                     <strong>Moderation Note:</strong> {rev.moderationNote}
                   </p>
                 )}
@@ -276,13 +276,13 @@ export default function AdminReviews({ currentUser }) {
 
               {/* Moderation Controls */}
               <div className="pt-1 flex items-center justify-between flex-wrap gap-2">
-                <span className="text-[10px] font-mono text-slate-400">
+                <span className="text-xs text-slate-500 font-medium">
                   Review ID: {rev.id}
                 </span>
 
                 <div className="flex items-center gap-2">
                   {isSupport ? (
-                    <span className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-500 text-[10px] font-mono uppercase">
+                    <span className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-500 text-xs font-medium">
                       Read Only (Support)
                     </span>
                   ) : (
@@ -332,7 +332,7 @@ export default function AdminReviews({ currentUser }) {
           <div onClick={() => setReviewToReject(null)} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" />
           <div className="relative z-10 w-full max-w-md bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-              <h3 className="font-display font-black text-lg uppercase text-slate-900">
+              <h3 className="font-bold text-lg text-slate-900 tracking-tight">
                 Reject Product Review
               </h3>
               <button
@@ -350,7 +350,7 @@ export default function AdminReviews({ currentUser }) {
 
             <form onSubmit={handleConfirmReject} className="space-y-4">
               <div>
-                <label className="block text-[11px] font-mono uppercase text-slate-600 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                   Moderator Reason / Feedback (Optional)
                 </label>
                 <textarea
