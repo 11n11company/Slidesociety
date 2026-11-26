@@ -58,8 +58,10 @@ export default function CartDrawer({
     return () => window.removeEventListener('slidescoiety:products-updated', handleUpdated);
   }, []);
 
-  // Optional Email for order confirmation
+  // Account creation & login fields
   const [accountEmail, setAccountEmail] = useState('');
+  const [accountPassword, setAccountPassword] = useState('');
+  const [isLoginMode, setIsLoginMode] = useState(false);
 
   // Address form fields
   const [recipientName, setRecipientName] = useState('');
@@ -134,7 +136,7 @@ export default function CartDrawer({
     setStep('checkout');
   };
 
-  // WhatsApp Checkout Handler: Registers Order in Database, then opens WhatsApp with full build details
+  // WhatsApp Checkout Handler: Ensures account is created/logged in on website, registers order, then opens WhatsApp
   const handleWhatsAppCheckout = async (e) => {
     if (e) e.preventDefault();
     setError('');
@@ -147,6 +149,57 @@ export default function CartDrawer({
       if (!phone || phone.trim().length < 7) {
         throw new Error('Please enter a valid contact phone number.');
       }
+
+      // 1. Account Requirement: Customer MUST have an account on website before going to WhatsApp
+      let activeUser = currentUser;
+      if (!activeUser) {
+        if (!accountEmail || !accountEmail.includes('@')) {
+          throw new Error('Please enter a valid email address to create your account.');
+        }
+        if (!accountPassword || accountPassword.length < 6) {
+          throw new Error('Please enter a password with at least 6 characters.');
+        }
+
+        if (isLoginMode) {
+          try {
+            const loginRes = await authApi.login({
+              email: accountEmail.trim().toLowerCase(),
+              password: accountPassword
+            });
+            activeUser = loginRes?.data?.user;
+            onAuthSuccess?.(activeUser);
+          } catch (loginErr) {
+            throw new Error(loginErr.message || 'Incorrect email or password. Please try again.');
+          }
+        } else {
+          try {
+            const regRes = await authApi.register({
+              fullName: recipientName.trim(),
+              email: accountEmail.trim().toLowerCase(),
+              password: accountPassword,
+              confirmPassword: accountPassword
+            });
+            activeUser = regRes?.data?.user;
+            onAuthSuccess?.(activeUser);
+          } catch (regErr) {
+            if (regErr.code === 'EMAIL_ALREADY_EXISTS') {
+              try {
+                const autoLog = await authApi.login({
+                  email: accountEmail.trim().toLowerCase(),
+                  password: accountPassword
+                });
+                activeUser = autoLog?.data?.user;
+                onAuthSuccess?.(activeUser);
+              } catch {
+                throw new Error('An account with this email already exists. Please verify your password or click "Sign in".');
+              }
+            } else {
+              throw new Error(regErr.message || 'Failed to create your account. Please try again.');
+            }
+          }
+        }
+      }
+
       if (!streetLine1 || streetLine1.trim().length < 3) {
         throw new Error('Please enter your street address.');
       }
@@ -160,10 +213,10 @@ export default function CartDrawer({
         throw new Error('Please enter your PIN code.');
       }
 
-      // 1. Register order in database (supports guest checkout seamlessly)
+      // 2. Register order in database linked to customer account
       const idempotencyKey = `idemp_wa_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
       const payload = {
-        customerEmail: accountEmail ? accountEmail.trim().toLowerCase() : undefined,
+        customerEmail: activeUser?.email || accountEmail.trim().toLowerCase(),
         items: items.map((it) => ({
           productId: it.id,
           quantity: it.qty || 1
@@ -190,9 +243,11 @@ export default function CartDrawer({
       setWhatsappOrder(newOrder);
       onClearCart?.();
 
-      // 2. Compile clean, readable WhatsApp message
+      // 3. Compile clean, readable WhatsApp message
       const technicianPhone = import.meta.env.VITE_WHATSAPP_NUMBER || '917902482052';
       const itemsListText = items.map((it, idx) => `  ${idx + 1}. *${it.name}* (x${it.qty}) — ${fmt(it.price * it.qty)}`).join('\n');
+
+      const userEmail = activeUser?.email || accountEmail.trim();
 
       const waMessage = [
         `🏎️ *SLIDESCOIETY — CUSTOM RIG INQUIRY*`,
@@ -200,7 +255,7 @@ export default function CartDrawer({
         `📋 *Order Ref:* #${newOrder.orderNumber}`,
         `👤 *Name:* ${recipientName.trim()}`,
         `📞 *Phone:* ${phone.trim()}`,
-        accountEmail ? `📧 *Email:* ${accountEmail.trim()}` : '',
+        userEmail ? `📧 *Account Email:* ${userEmail}` : '',
         `📍 *Delivery:* ${city.trim()}, ${state.trim()} - ${postalCode.trim()}`,
         `🏠 *Address:* ${streetLine1.trim()}${streetLine2 ? ', ' + streetLine2.trim() : ''}`,
         `━━━━━━━━━━━━━━━━━━━━━━━━━━`,
@@ -214,18 +269,18 @@ export default function CartDrawer({
         `• *Total: ${fmt(total)}*`,
         customerNotes ? `\n📝 *Notes:*\n"${customerNotes.trim()}"` : '',
         `━━━━━━━━━━━━━━━━━━━━━━━━━━`,
-        `Hi Slidescoiety Team! I would like to confirm my order #${newOrder.orderNumber} and check dispatch details.`
+        `Hi Slidescoiety Team! I have created my account and registered Order #${newOrder.orderNumber}. I would like to finalize build details and delivery.`
       ].filter(Boolean).join('\n');
 
       const fullWaUrl = `https://wa.me/${technicianPhone}?text=${encodeURIComponent(waMessage)}`;
       setWhatsappUrl(fullWaUrl);
 
-      // 3. Open WhatsApp in new tab
+      // 4. Open WhatsApp in new tab
       window.open(fullWaUrl, '_blank');
 
-      // 4. Transition drawer to confirmation view
+      // 5. Transition drawer to confirmation view
       setStep('whatsapp_confirmation');
-      onShowToast?.(`Order ${newOrder.orderNumber} registered! Opening WhatsApp...`);
+      onShowToast?.(`Account & Order ${newOrder.orderNumber} registered! Opening WhatsApp...`);
     } catch (err) {
       setError(err.message || 'Failed to place order. Please check your information and try again.');
     } finally {
@@ -424,15 +479,69 @@ export default function CartDrawer({
                 <span>Direct WhatsApp consultation & order confirmation with our technicians</span>
               </div>
 
-              {/* Logged in user info badge */}
-              {currentUser && (
-                <div className="px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <User className="w-3.5 h-3.5 text-[#e50914]" />
-                    <span className="text-white font-medium">{currentUser.fullName}</span>
-                    <span className="text-neutral-400 font-mono text-[11px]">({currentUser.email})</span>
+              {/* Customer Account Requirement */}
+              {currentUser ? (
+                <div className="px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2.5">
+                    <User className="w-4 h-4 text-[#e50914]" />
+                    <div>
+                      <div className="text-white font-bold">{currentUser.fullName}</div>
+                      <div className="text-neutral-400 font-mono text-[11px]">{currentUser.email}</div>
+                    </div>
                   </div>
-                  <span className="text-[10px] font-mono text-emerald-400">Signed In</span>
+                  <span className="text-[10px] font-mono text-emerald-400 font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                    Logged In
+                  </span>
+                </div>
+              ) : (
+                <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-neutral-200">
+                      <User className="w-4 h-4 text-[#e50914]" />
+                      <span>{isLoginMode ? 'Sign In to Your Account' : 'Create Account'}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsLoginMode(!isLoginMode);
+                        setError('');
+                      }}
+                      className="text-[11px] text-[#e50914] hover:underline"
+                    >
+                      {isLoginMode ? 'Need an account? Sign up' : 'Already registered? Sign in'}
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="col-span-2 sm:col-span-1">
+                      <label className="block text-[11px] font-mono uppercase text-neutral-400 mb-1">
+                        Email Address *
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={accountEmail}
+                        onChange={(e) => setAccountEmail(e.target.value)}
+                        placeholder="your@email.com"
+                        className="w-full bg-black/60 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-[#e50914]"
+                      />
+                    </div>
+
+                    <div className="col-span-2 sm:col-span-1">
+                      <label className="block text-[11px] font-mono uppercase text-neutral-400 mb-1">
+                        {isLoginMode ? 'Password *' : 'Create Password *'}
+                      </label>
+                      <input
+                        type="password"
+                        required
+                        minLength={6}
+                        value={accountPassword}
+                        onChange={(e) => setAccountPassword(e.target.value)}
+                        placeholder={isLoginMode ? 'Enter password' : 'Min 6 characters'}
+                        className="w-full bg-black/60 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-[#e50914]"
+                      />
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -444,7 +553,7 @@ export default function CartDrawer({
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="col-span-2">
+                  <div className="col-span-2 sm:col-span-1">
                     <label className="block text-[11px] font-mono uppercase text-neutral-400 mb-1">
                       Full Name *
                     </label>
@@ -468,19 +577,6 @@ export default function CartDrawer({
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="+91 98765 43210"
-                      className="w-full bg-black/60 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-[#e50914]"
-                    />
-                  </div>
-
-                  <div className="col-span-2 sm:col-span-1">
-                    <label className="block text-[11px] font-mono uppercase text-neutral-400 mb-1">
-                      Email (Optional)
-                    </label>
-                    <input
-                      type="email"
-                      value={accountEmail}
-                      onChange={(e) => setAccountEmail(e.target.value)}
-                      placeholder="For invoice & updates"
                       className="w-full bg-black/60 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-[#e50914]"
                     />
                   </div>
