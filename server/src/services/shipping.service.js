@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { prisma } from '../config/db.js';
 import { logger } from '../utils/logger.js';
 import { sendShippingNotificationEmail } from '../utils/email.service.js';
+import { confirmReservationForOrder } from './inventoryReservation.service.js';
 
 // Valid Shipment Status State Machine Transitions
 export const ALLOWED_SHIPMENT_TRANSITIONS = {
@@ -121,18 +122,8 @@ export async function createShipmentForOrder(orderId, input, adminUserId) {
     throw error;
   }
 
-  // 4. Reject unconfirmed inventory reservations
-  if (order.reservations && order.reservations.length > 0) {
-    const unconfirmedReservation = order.reservations.find((r) => r.status !== 'CONFIRMED');
-    if (unconfirmedReservation) {
-      const error = new Error(
-        `Cannot create shipment for order [${order.orderNumber}]: Inventory reservation is '${unconfirmedReservation.status}'. Reservations must be CONFIRMED before dispatch.`
-      );
-      error.statusCode = 400;
-      error.code = 'UNCONFIRMED_INVENTORY';
-      throw error;
-    }
-  }
+  // 4. Ensure inventory reservations are confirmed upon dispatch (auto-confirmed in step 6)
+  // If payment is captured, any pending reservations are committed atomically during shipment creation.
 
   // 5. Prevent duplicate shipments (one shipment per order enforced)
   if (order.shipment) {
@@ -144,8 +135,11 @@ export async function createShipmentForOrder(orderId, input, adminUserId) {
     throw error;
   }
 
-  // 6. Create shipment atomically with initial status history
+  // 6. Create shipment atomically with initial status history and commit stock reservations
   const shipment = await prisma.$transaction(async (tx) => {
+    // Atomically commit any pending stock reservations for this order
+    await confirmReservationForOrder(tx, order.id);
+
     const created = await tx.shipment.create({
       data: {
         orderId: order.id,

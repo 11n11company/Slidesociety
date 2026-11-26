@@ -5,7 +5,8 @@ import { env } from '../config/env.js';
 import { logger } from '../utils/logger.js';
 import {
   reserveStockForOrder,
-  releaseReservationForOrder
+  releaseReservationForOrder,
+  confirmReservationForOrder
 } from './inventoryReservation.service.js';
 
 // Valid Order Status State Machine Transitions
@@ -997,6 +998,9 @@ export async function recordOrderPaymentByAdmin(orderId, { amount, method, trans
         }
       });
     }
+
+    // 3. Atomically confirm inventory reservations and deduct stock
+    await confirmReservationForOrder(tx, order.id);
   });
 
   // 3. Generate official Tax Invoice
