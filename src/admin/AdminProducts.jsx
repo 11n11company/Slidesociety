@@ -308,16 +308,21 @@ export default function AdminProducts({ currentUser }) {
             className="bg-black/60 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#e50914] transition-colors"
           >
             <option value="ALL">All Categories</option>
-            <option value="Cockpit frames">Cockpit frames</option>
-            <option value="Racing seats">Racing seats</option>
-            <option value="Wheel bases">Wheel bases</option>
+            <option value="Wheelbase">Wheelbase</option>
+            <option value="Steering Wheel">Steering Wheel</option>
             <option value="Pedals">Pedals</option>
-            <option value="Shifters">Shifters</option>
-            <option value="Handbrakes">Handbrakes</option>
-            <option value="Monitor mounts">Monitor mounts</option>
-            <option value="Keyboard trays">Keyboard trays</option>
-            <option value="Cable-management kits">Cable-management kits</option>
-            <option value="Motion systems">Motion systems</option>
+            <option value="Cockpit">Cockpit</option>
+            <option value="Motion System">Motion System</option>
+            <option value="Monitor Stand">Monitor Stand</option>
+            <option value="Seat">Seat</option>
+            <option value="Shifter">Shifter</option>
+            <option value="Handbrake">Handbrake</option>
+            <option value="Monitor">Monitor</option>
+            <option value="Sim PC">Sim PC</option>
+            <option value="Accessories">Accessories</option>
+            <option value="Cockpit frames">Cockpit frames (Legacy)</option>
+            <option value="Racing seats">Racing seats (Legacy)</option>
+            <option value="Wheel bases">Wheel bases (Legacy)</option>
             <option value="Bundles">Bundles</option>
           </select>
 
@@ -532,16 +537,21 @@ export default function AdminProducts({ currentUser }) {
                     onChange={(e) => setCategory(e.target.value)}
                     className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#e50914]"
                   >
-                    <option value="Cockpit frames">Cockpit frames</option>
-                    <option value="Racing seats">Racing seats</option>
-                    <option value="Wheel bases">Wheel bases</option>
+                    <option value="Wheelbase">Wheelbase</option>
+                    <option value="Steering Wheel">Steering Wheel</option>
                     <option value="Pedals">Pedals</option>
-                    <option value="Shifters">Shifters</option>
-                    <option value="Handbrakes">Handbrakes</option>
-                    <option value="Monitor mounts">Monitor mounts</option>
-                    <option value="Keyboard trays">Keyboard trays</option>
-                    <option value="Cable-management kits">Cable-management kits</option>
-                    <option value="Motion systems">Motion systems</option>
+                    <option value="Cockpit">Cockpit</option>
+                    <option value="Motion System">Motion System</option>
+                    <option value="Monitor Stand">Monitor Stand</option>
+                    <option value="Seat">Seat</option>
+                    <option value="Shifter">Shifter</option>
+                    <option value="Handbrake">Handbrake</option>
+                    <option value="Monitor">Monitor</option>
+                    <option value="Sim PC">Sim PC</option>
+                    <option value="Accessories">Accessories</option>
+                    <option value="Cockpit frames">Cockpit frames (Legacy)</option>
+                    <option value="Racing seats">Racing seats (Legacy)</option>
+                    <option value="Wheel bases">Wheel bases (Legacy)</option>
                     <option value="Bundles">Bundles</option>
                   </select>
                 </div>
