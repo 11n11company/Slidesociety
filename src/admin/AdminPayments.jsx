@@ -75,13 +75,13 @@ export default function AdminPayments({ currentUser, onNavigate }) {
   const getStatusBadge = (status) => {
     switch (status) {
       case 'CAPTURED':
-        return 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30';
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
       case 'AUTHORIZED':
-        return 'bg-sky-500/15 text-sky-400 border-sky-500/30';
+        return 'bg-sky-50 text-sky-700 border-sky-200';
       case 'FAILED':
-        return 'bg-rose-500/15 text-rose-400 border-rose-500/30';
+        return 'bg-rose-50 text-rose-700 border-rose-200';
       default:
-        return 'bg-amber-500/15 text-amber-400 border-amber-500/30';
+        return 'bg-amber-50 text-amber-700 border-amber-200';
     }
   };
 
@@ -90,24 +90,24 @@ export default function AdminPayments({ currentUser, onNavigate }) {
       {/* ======================================================== */}
       {/* FILTER & SEARCH BAR                                      */}
       {/* ======================================================== */}
-      <div className="p-4 rounded-2xl bg-[#0f0003] border border-white/10 flex flex-col sm:flex-row gap-3 items-center justify-between">
+      <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-3 items-center justify-between">
         <form onSubmit={handleSearchSubmit} className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-neutral-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search order number or payment ref..."
-            className="w-full bg-black/60 border border-white/10 rounded-xl pl-10 pr-3 py-2 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-[#e50914] transition-colors"
+            className="w-full bg-white border border-slate-300 rounded-xl pl-10 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#e50914] transition-colors"
           />
         </form>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <span className="text-[11px] font-mono uppercase text-neutral-400 shrink-0">Status:</span>
+          <span className="text-[11px] font-mono uppercase text-slate-500 shrink-0">Status:</span>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-black/60 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#e50914] transition-colors"
+            className="bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#e50914] transition-colors"
           >
             <option value="ALL">All Payments</option>
             <option value="CAPTURED">Captured</option>
@@ -119,7 +119,7 @@ export default function AdminPayments({ currentUser, onNavigate }) {
           <button
             type="button"
             onClick={loadPayments}
-            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-neutral-300 hover:text-white border border-white/10 transition-colors"
+            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border border-slate-200 transition-colors"
             title="Refresh Payments"
           >
             <RefreshCw className="w-4 h-4" />
@@ -130,25 +130,25 @@ export default function AdminPayments({ currentUser, onNavigate }) {
       {/* ======================================================== */}
       {/* PAYMENTS TABLE                                           */}
       {/* ======================================================== */}
-      <div className="p-6 rounded-2xl bg-[#0f0003] border border-white/10 space-y-4">
+      <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
         {loading ? (
-          <div className="py-16 text-center text-neutral-400 flex flex-col items-center justify-center space-y-2">
+          <div className="py-16 text-center text-slate-500 flex flex-col items-center justify-center space-y-2">
             <RefreshCw className="w-5 h-5 animate-spin text-[#e50914]" />
             <span className="font-mono text-xs uppercase tracking-wider">Loading Payment Audits...</span>
           </div>
         ) : error ? (
-          <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
+          <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
             {error}
           </div>
         ) : payments.length === 0 ? (
-          <div className="py-16 text-center text-neutral-500 font-mono text-xs">
+          <div className="py-16 text-center text-slate-400 font-mono text-xs">
             No payment transaction records found.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-white/5 text-neutral-400 font-mono text-[10px] uppercase tracking-wider">
+                <tr className="border-b border-slate-200 text-slate-500 font-mono text-[10px] uppercase tracking-wider bg-slate-50/50">
                   <th className="py-3 px-3">Order Number</th>
                   <th className="py-3 px-3">Payment Reference</th>
                   <th className="py-3 px-3">Customer</th>
@@ -158,23 +158,23 @@ export default function AdminPayments({ currentUser, onNavigate }) {
                   <th className="py-3 px-3 text-right">Date & Time</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-slate-100">
                 {payments.map((p) => (
-                  <tr key={p.id} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="py-3.5 px-3 font-mono font-bold text-white">
+                  <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-3.5 px-3 font-mono font-bold text-slate-900">
                       {p.orderNumber}
                     </td>
-                    <td className="py-3.5 px-3 font-mono text-[11px] text-neutral-300">
+                    <td className="py-3.5 px-3 font-mono text-[11px] text-slate-600">
                       {p.reference}
                     </td>
                     <td className="py-3.5 px-3">
-                      <div className="font-medium text-white">{p.customerName}</div>
-                      <div className="font-mono text-[10px] text-neutral-400">{p.customerEmail}</div>
+                      <div className="font-medium text-slate-900">{p.customerName}</div>
+                      <div className="font-mono text-[10px] text-slate-500">{p.customerEmail}</div>
                     </td>
-                    <td className="py-3.5 px-3 font-mono font-bold text-white">
+                    <td className="py-3.5 px-3 font-mono font-bold text-slate-900">
                       {fmt(p.amount)}
                     </td>
-                    <td className="py-3.5 px-3 text-neutral-300 font-mono text-[11px]">
+                    <td className="py-3.5 px-3 text-slate-600 font-mono text-[11px]">
                       {p.method}
                     </td>
                     <td className="py-3.5 px-3">
@@ -182,7 +182,7 @@ export default function AdminPayments({ currentUser, onNavigate }) {
                         {p.status}
                       </span>
                     </td>
-                    <td className="py-3.5 px-3 text-right font-mono text-[11px] text-neutral-400">
+                    <td className="py-3.5 px-3 text-right font-mono text-[11px] text-slate-500">
                       {new Date(p.date).toLocaleString()}
                     </td>
                   </tr>

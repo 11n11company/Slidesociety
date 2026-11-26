@@ -125,13 +125,13 @@ export default function AdminReviews({ currentUser }) {
       {/* Header & Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="font-display font-black text-2xl uppercase tracking-tight text-white flex items-center gap-2.5">
+          <h2 className="font-display font-black text-2xl uppercase tracking-tight text-slate-900 flex items-center gap-2.5">
             <span>Customer Review Moderation</span>
-            <span className="text-xs px-2.5 py-0.5 rounded-full bg-white/10 text-neutral-300 font-mono">
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 font-mono">
               {pagination.totalCount} Total
             </span>
           </h2>
-          <p className="text-xs text-neutral-400 mt-1">
+          <p className="text-xs text-slate-500 mt-1">
             Audit and moderate verified purchase customer feedback before public publication.
           </p>
         </div>
@@ -139,7 +139,7 @@ export default function AdminReviews({ currentUser }) {
         <button
           type="button"
           onClick={() => loadReviews(pagination.page)}
-          className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-neutral-300 hover:text-white border border-white/10 text-xs font-mono uppercase tracking-wider flex items-center gap-2 self-start sm:self-auto transition-all"
+          className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-mono uppercase tracking-wider flex items-center gap-2 self-start sm:self-auto transition-all shadow-sm"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#e50914]' : ''}`} />
           <span>Refresh</span>
@@ -148,15 +148,15 @@ export default function AdminReviews({ currentUser }) {
 
       {/* Notifications */}
       {error && (
-        <div className="flex items-center gap-2.5 p-3 rounded-xl bg-rose-500/15 border border-rose-500/40 text-xs text-rose-200">
-          <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+        <div className="flex items-center gap-2.5 p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700">
+          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
           <span className="flex-1">{error}</span>
         </div>
       )}
 
       {successMsg && (
-        <div className="flex items-center gap-2.5 p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-xs text-emerald-200">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+        <div className="flex items-center gap-2.5 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
           <span className="flex-1">{successMsg}</span>
         </div>
       )}
@@ -164,7 +164,7 @@ export default function AdminReviews({ currentUser }) {
       {/* Filter Tabs & Search Bar */}
       <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
         {/* Status Pills */}
-        <div className="flex rounded-xl bg-black/60 p-1 border border-white/10 flex-wrap">
+        <div className="flex rounded-xl bg-slate-100 p-1 border border-slate-200 flex-wrap">
           {['ALL', 'PENDING', 'APPROVED', 'REJECTED'].map((st) => (
             <button
               key={st}
@@ -172,8 +172,8 @@ export default function AdminReviews({ currentUser }) {
               onClick={() => setStatusFilter(st)}
               className={`px-3 py-1.5 text-xs font-bold font-mono uppercase tracking-wider rounded-lg transition-all ${
                 statusFilter === st
-                  ? 'bg-[#e50914] text-white shadow-md shadow-[#e50914]/30'
-                  : 'text-neutral-400 hover:text-white'
+                  ? 'bg-[#e50914] text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               {st}
@@ -183,13 +183,13 @@ export default function AdminReviews({ currentUser }) {
 
         {/* Search */}
         <form onSubmit={handleSearchSubmit} className="relative w-full md:w-80">
-          <Search className="w-4 h-4 text-neutral-500 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search driver, product, comment..."
-            className="w-full bg-black/60 border border-white/15 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-[#e50914]"
+            className="w-full bg-white border border-slate-300 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#e50914]"
           />
         </form>
       </div>
@@ -198,13 +198,13 @@ export default function AdminReviews({ currentUser }) {
       {loading ? (
         <div className="py-20 flex flex-col items-center justify-center gap-3">
           <RefreshCw className="w-8 h-8 animate-spin text-[#e50914]" />
-          <span className="font-mono text-xs uppercase tracking-wider text-neutral-400">Loading reviews...</span>
+          <span className="font-mono text-xs uppercase tracking-wider text-slate-500">Loading reviews...</span>
         </div>
       ) : reviews.length === 0 ? (
-        <div className="py-20 text-center border border-white/10 rounded-2xl bg-black/30">
-          <MessageSquare className="w-10 h-10 text-neutral-600 mx-auto mb-3" />
-          <h4 className="font-display font-black text-lg uppercase text-white mb-1">No Reviews Found</h4>
-          <p className="text-xs text-neutral-400 max-w-sm mx-auto">
+        <div className="py-20 text-center border border-slate-200 rounded-2xl bg-white shadow-sm">
+          <MessageSquare className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+          <h4 className="font-display font-black text-lg uppercase text-slate-900 mb-1">No Reviews Found</h4>
+          <p className="text-xs text-slate-500 max-w-sm mx-auto">
             No customer reviews match the selected status filter or search parameters.
           </p>
         </div>
@@ -213,7 +213,7 @@ export default function AdminReviews({ currentUser }) {
           {reviews.map((rev) => (
             <div
               key={rev.id}
-              className="p-5 rounded-2xl bg-black/50 border border-white/10 hover:border-white/20 transition-all space-y-3 group"
+              className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-slate-300 transition-all space-y-3 group"
             >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 {/* Product & User Header */}
@@ -222,16 +222,16 @@ export default function AdminReviews({ currentUser }) {
                     <img
                       src={rev.product.imageUrl}
                       alt={rev.product.name}
-                      className="w-12 h-12 rounded-xl object-contain object-center bg-neutral-900 border border-white/10 shrink-0 p-0.5"
+                      className="w-12 h-12 rounded-xl object-contain object-center bg-slate-100 border border-slate-200 shrink-0 p-0.5"
                     />
                   )}
                   <div className="min-w-0">
-                    <span className="text-[10px] font-mono uppercase text-neutral-400 block truncate">
+                    <span className="text-[10px] font-mono uppercase text-slate-500 block truncate">
                       {rev.product?.category} // Order: {rev.order?.orderNumber || 'Verified Order'}
                     </span>
-                    <h4 className="font-bold text-sm text-white truncate">{rev.product?.name}</h4>
-                    <span className="text-xs text-neutral-400">
-                      Driver: <strong className="text-white">{rev.user?.fullName}</strong> ({rev.user?.email})
+                    <h4 className="font-bold text-sm text-slate-900 truncate">{rev.product?.name}</h4>
+                    <span className="text-xs text-slate-500">
+                      Driver: <strong className="text-slate-900">{rev.user?.fullName}</strong> ({rev.user?.email})
                     </span>
                   </div>
                 </div>
@@ -241,34 +241,34 @@ export default function AdminReviews({ currentUser }) {
                   <span
                     className={`px-2.5 py-1 rounded-full uppercase font-bold border ${
                       rev.status === 'APPROVED'
-                        ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                         : rev.status === 'REJECTED'
-                        ? 'bg-rose-500/15 text-rose-400 border-rose-500/30'
-                        : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                        ? 'bg-rose-50 text-rose-700 border-rose-200'
+                        : 'bg-amber-50 text-amber-700 border-amber-200'
                     }`}
                   >
                     {rev.status}
                   </span>
-                  <span className="text-neutral-500">
+                  <span className="text-slate-400">
                     {new Date(rev.createdAt).toLocaleDateString()}
                   </span>
                 </div>
               </div>
 
               {/* Review Content */}
-              <div className="p-4 rounded-xl bg-black/40 border border-white/5 space-y-1.5">
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
                 <div className="flex items-center gap-1.5 text-[#e50914]">
                   {[...Array(5)].map((_, i) => (
                     <Star
                       key={i}
-                      className={`w-3.5 h-3.5 ${i < rev.rating ? 'fill-current' : 'text-neutral-700'}`}
+                      className={`w-3.5 h-3.5 ${i < rev.rating ? 'fill-current' : 'text-slate-300'}`}
                     />
                   ))}
-                  {rev.title && <strong className="text-white text-xs ml-2">{rev.title}</strong>}
+                  {rev.title && <strong className="text-slate-900 text-xs ml-2">{rev.title}</strong>}
                 </div>
-                <p className="text-xs text-neutral-300 leading-relaxed">{rev.comment}</p>
+                <p className="text-xs text-slate-700 leading-relaxed">{rev.comment}</p>
                 {rev.moderationNote && (
-                  <p className="text-[11px] font-mono text-neutral-400 border-t border-white/5 pt-1.5 mt-2">
+                  <p className="text-[11px] font-mono text-slate-500 border-t border-slate-200 pt-1.5 mt-2">
                     <strong>Moderation Note:</strong> {rev.moderationNote}
                   </p>
                 )}
@@ -276,13 +276,13 @@ export default function AdminReviews({ currentUser }) {
 
               {/* Moderation Controls */}
               <div className="pt-1 flex items-center justify-between flex-wrap gap-2">
-                <span className="text-[10px] font-mono text-neutral-500">
+                <span className="text-[10px] font-mono text-slate-400">
                   Review ID: {rev.id}
                 </span>
 
                 <div className="flex items-center gap-2">
                   {isSupport ? (
-                    <span className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-neutral-400 text-[10px] font-mono uppercase">
+                    <span className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-500 text-[10px] font-mono uppercase">
                       Read Only (Support)
                     </span>
                   ) : (
@@ -291,7 +291,7 @@ export default function AdminReviews({ currentUser }) {
                         <button
                           type="button"
                           onClick={() => handleApprove(rev.id)}
-                          className="px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 text-xs font-bold uppercase transition-all flex items-center gap-1.5"
+                          className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 text-xs font-bold uppercase transition-all flex items-center gap-1.5"
                         >
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           <span>Approve</span>
@@ -302,7 +302,7 @@ export default function AdminReviews({ currentUser }) {
                         <button
                           type="button"
                           onClick={() => handleOpenReject(rev)}
-                          className="px-3 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-400 text-xs font-bold uppercase transition-all flex items-center gap-1.5"
+                          className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-xs font-bold uppercase transition-all flex items-center gap-1.5"
                         >
                           <XCircle className="w-3.5 h-3.5" />
                           <span>Reject</span>
@@ -312,7 +312,7 @@ export default function AdminReviews({ currentUser }) {
                       <button
                         type="button"
                         onClick={() => handleDelete(rev.id)}
-                        className="p-1.5 rounded-xl text-neutral-500 hover:text-rose-400 hover:bg-white/5 transition-colors"
+                        className="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-slate-100 transition-colors"
                         title="Delete review"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -329,28 +329,28 @@ export default function AdminReviews({ currentUser }) {
       {/* Reject Moderation Modal */}
       {reviewToReject && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div onClick={() => setReviewToReject(null)} className="absolute inset-0 bg-black/80 backdrop-blur-md" />
-          <div className="relative z-10 w-full max-w-md bg-[#0f0003] border border-white/20 rounded-3xl p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-white/10">
-              <h3 className="font-display font-black text-lg uppercase text-white">
+          <div onClick={() => setReviewToReject(null)} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" />
+          <div className="relative z-10 w-full max-w-md bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+              <h3 className="font-display font-black text-lg uppercase text-slate-900">
                 Reject Product Review
               </h3>
               <button
                 type="button"
                 onClick={() => setReviewToReject(null)}
-                className="text-neutral-400 hover:text-white"
+                className="text-slate-400 hover:text-slate-700 hover:bg-slate-100 p-1 rounded-full transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <p className="text-xs text-neutral-300">
+            <p className="text-xs text-slate-600">
               Rejecting will withhold this review from public display. You can optionally include feedback for the driver.
             </p>
 
             <form onSubmit={handleConfirmReject} className="space-y-4">
               <div>
-                <label className="block text-[11px] font-mono uppercase text-neutral-400 mb-1.5">
+                <label className="block text-[11px] font-mono uppercase text-slate-600 mb-1.5">
                   Moderator Reason / Feedback (Optional)
                 </label>
                 <textarea
@@ -358,7 +358,7 @@ export default function AdminReviews({ currentUser }) {
                   value={rejectNote}
                   onChange={(e) => setRejectNote(e.target.value)}
                   placeholder="e.g. Please avoid promotional links or vulgar language..."
-                  className="w-full bg-black/60 border border-white/15 rounded-xl p-3 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-[#e50914] resize-none"
+                  className="w-full bg-white border border-slate-300 rounded-xl p-3 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#e50914] resize-none"
                 />
               </div>
 
@@ -366,7 +366,7 @@ export default function AdminReviews({ currentUser }) {
                 <button
                   type="button"
                   onClick={() => setReviewToReject(null)}
-                  className="px-4 py-2 rounded-xl text-neutral-400 hover:text-white text-xs font-bold uppercase transition-colors"
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-bold uppercase transition-colors"
                 >
                   Cancel
                 </button>

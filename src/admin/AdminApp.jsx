@@ -120,9 +120,9 @@ export default function AdminApp({ onExitAdmin }) {
 
   if (checkingAuth) {
     return (
-      <div className="min-h-screen bg-[#070707] flex flex-col items-center justify-center space-y-3 text-neutral-400 font-sans">
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center space-y-3 text-slate-500 font-sans">
         <RefreshCw className="w-8 h-8 animate-spin text-[#e50914]" />
-        <span className="font-mono text-xs uppercase tracking-widest text-neutral-300">
+        <span className="font-mono text-xs uppercase tracking-widest text-slate-600">
           Authenticating Administrative Credentials...
         </span>
       </div>

@@ -287,16 +287,16 @@ export default function AdminProducts({ currentUser }) {
       {/* ======================================================== */}
       {/* ACTION & FILTER BAR                                      */}
       {/* ======================================================== */}
-      <div className="p-4 rounded-2xl bg-[#0f0003] border border-white/10 flex flex-col sm:flex-row gap-3 items-center justify-between">
+      <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-3 items-center justify-between">
         {/* Search */}
         <form onSubmit={handleSearchSubmit} className="relative w-full sm:w-72">
-          <Search className="w-4 h-4 text-neutral-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search products..."
-            className="w-full bg-black/60 border border-white/10 rounded-xl pl-10 pr-3 py-2 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-[#e50914] transition-colors"
+            className="w-full bg-white border border-slate-300 rounded-xl pl-10 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#e50914] transition-colors"
           />
         </form>
 
@@ -305,7 +305,7 @@ export default function AdminProducts({ currentUser }) {
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="bg-black/60 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#e50914] transition-colors"
+            className="bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#e50914] transition-colors"
           >
             <option value="ALL">All Categories</option>
             <option value="Wheelbase">Wheelbase</option>
@@ -342,12 +342,12 @@ export default function AdminProducts({ currentUser }) {
 
       {/* Success Notification */}
       {successMsg && (
-        <div className="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-center justify-between font-medium">
+        <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between font-medium">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 shrink-0" />
             <span>{successMsg}</span>
           </div>
-          <button type="button" onClick={() => setSuccessMsg('')} className="text-emerald-400 hover:text-white">
+          <button type="button" onClick={() => setSuccessMsg('')} className="text-emerald-700 hover:text-emerald-900">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -355,12 +355,12 @@ export default function AdminProducts({ currentUser }) {
 
       {/* Error Notification */}
       {error && (
-        <div className="p-3.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between font-medium">
+        <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center justify-between font-medium">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
-          <button type="button" onClick={() => setError('')} className="text-rose-400 hover:text-white">
+          <button type="button" onClick={() => setError('')} className="text-rose-700 hover:text-rose-900">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -369,21 +369,21 @@ export default function AdminProducts({ currentUser }) {
       {/* ======================================================== */}
       {/* PRODUCTS TABLE                                           */}
       {/* ======================================================== */}
-      <div className="p-6 rounded-2xl bg-[#0f0003] border border-white/10 space-y-4">
+      <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
         {loading ? (
-          <div className="py-16 text-center text-neutral-400 flex flex-col items-center justify-center space-y-2">
+          <div className="py-16 text-center text-slate-500 flex flex-col items-center justify-center space-y-2">
             <RefreshCw className="w-5 h-5 animate-spin text-[#e50914]" />
             <span className="font-mono text-xs uppercase tracking-wider">Loading Catalog Products...</span>
           </div>
         ) : products.length === 0 ? (
-          <div className="py-16 text-center text-neutral-500 font-mono text-xs">
+          <div className="py-16 text-center text-slate-400 font-mono text-xs">
             No products found matching the criteria.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-white/5 text-neutral-400 font-mono text-[10px] uppercase tracking-wider">
+                <tr className="border-b border-slate-200 text-slate-500 font-mono text-[10px] uppercase tracking-wider bg-slate-50/50">
                   <th className="py-3 px-3">Product</th>
                   <th className="py-3 px-3">Category</th>
                   <th className="py-3 px-3">Price</th>
@@ -392,43 +392,43 @@ export default function AdminProducts({ currentUser }) {
                   <th className="py-3 px-3 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-slate-100">
                 {products.map((prod) => (
-                  <tr key={prod.id} className="hover:bg-white/[0.02] transition-colors">
+                  <tr key={prod.id} className="hover:bg-slate-50/80 transition-colors">
                     <td className="py-3.5 px-3">
                       <div className="flex items-center gap-3">
                         <img
                           src={prod.imageUrl || '/hero-backdrop-hd.jpg'}
                           alt={prod.name}
-                          className="w-10 h-10 rounded-lg object-contain object-center bg-neutral-900 border border-white/10 shrink-0 p-0.5"
+                          className="w-10 h-10 rounded-lg object-contain object-center bg-slate-100 border border-slate-200 shrink-0 p-0.5"
                           onError={(e) => {
                             e.target.src = '/hero-backdrop-hd.jpg';
                           }}
                         />
                         <div className="min-w-0">
-                          <div className="font-bold text-white truncate max-w-xs">{prod.name}</div>
-                          <div className="font-mono text-[10px] text-neutral-400 truncate">{prod.id}</div>
+                          <div className="font-bold text-slate-900 truncate max-w-xs">{prod.name}</div>
+                          <div className="font-mono text-[10px] text-slate-500 truncate">{prod.id}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="py-3.5 px-3 text-neutral-300 font-mono text-[11px]">
+                    <td className="py-3.5 px-3 text-slate-600 font-mono text-[11px]">
                       {prod.category}
                     </td>
-                    <td className="py-3.5 px-3 font-mono font-bold text-white">
+                    <td className="py-3.5 px-3 font-mono font-bold text-slate-900">
                       {fmt(prod.priceInr || prod.price)}
                     </td>
                     <td className="py-3.5 px-3 font-mono">
-                      <span className={prod.stockQuantity <= 0 ? 'text-rose-400 font-bold' : prod.stockQuantity <= 5 ? 'text-amber-400 font-bold' : 'text-neutral-300'}>
+                      <span className={prod.stockQuantity <= 0 ? 'text-rose-600 font-bold' : prod.stockQuantity <= 5 ? 'text-amber-600 font-bold' : 'text-slate-600'}>
                         {prod.stockQuantity} units
                       </span>
                     </td>
                     <td className="py-3.5 px-3">
                       {prod.isAvailable ? (
-                        <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase border bg-emerald-500/15 text-emerald-400 border-emerald-500/30">
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase border bg-emerald-50 text-emerald-700 border-emerald-200">
                           Active
                         </span>
                       ) : (
-                        <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase border bg-neutral-500/15 text-neutral-400 border-neutral-500/30">
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase border bg-slate-100 text-slate-600 border-slate-200">
                           Deactivated
                         </span>
                       )}
@@ -439,7 +439,7 @@ export default function AdminProducts({ currentUser }) {
                           <button
                             type="button"
                             onClick={() => handleOpenEdit(prod)}
-                            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/15 text-neutral-300 hover:text-white transition-colors"
+                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200 transition-colors"
                             title="Edit Product"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
@@ -447,14 +447,14 @@ export default function AdminProducts({ currentUser }) {
                           <button
                             type="button"
                             onClick={() => setProductToDelete(prod)}
-                            className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-rose-500/20 transition-colors"
+                            className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 border border-rose-200 transition-colors"
                             title="Deactivate / Delete"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       ) : (
-                        <span className="text-[10px] font-mono text-neutral-500">Read Only</span>
+                        <span className="text-[10px] font-mono text-slate-400">Read Only</span>
                       )}
                     </td>
                   </tr>
@@ -470,27 +470,27 @@ export default function AdminProducts({ currentUser }) {
       {/* ======================================================== */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div onClick={() => setShowModal(false)} className="absolute inset-0 bg-black/80 backdrop-blur-md" />
+          <div onClick={() => setShowModal(false)} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" />
 
-          <div className="relative z-10 w-full max-w-lg bg-[#0f0003] border border-white/20 rounded-3xl p-6 sm:p-8 shadow-2xl max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-5 shrink-0">
+          <div className="relative z-10 w-full max-w-lg bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-2xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-200 mb-5 shrink-0">
               <div className="flex items-center gap-2.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#e50914]" />
-                <h3 className="font-display font-black text-xl uppercase tracking-tight text-white">
+                <h3 className="font-display font-black text-xl uppercase tracking-tight text-slate-900">
                   {isEditing ? `Edit Product: ${name}` : 'Add Catalog Product'}
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
-                className="p-1 rounded-full text-neutral-400 hover:text-white"
+                className="p-1 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {formError && (
-              <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs mb-4 flex items-center gap-2">
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs mb-4 flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{formError}</span>
               </div>
@@ -499,7 +499,7 @@ export default function AdminProducts({ currentUser }) {
             <form onSubmit={handleFormSubmit} className="flex-1 overflow-y-auto space-y-4 pr-1">
               {!isEditing && (
                 <div>
-                  <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                  <label className="block text-[10px] font-mono uppercase text-slate-600 mb-1">
                     Product Slug ID (lowercase-hyphens)
                   </label>
                   <input
@@ -508,13 +508,13 @@ export default function AdminProducts({ currentUser }) {
                     value={id}
                     onChange={(e) => setId(e.target.value)}
                     placeholder="e.g. active-pedal-v2"
-                    className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white font-mono placeholder-neutral-600 focus:outline-none focus:border-[#e50914]"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 font-mono placeholder-slate-400 focus:outline-none focus:border-[#e50914]"
                   />
                 </div>
               )}
 
               <div>
-                <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                <label className="block text-[10px] font-mono uppercase text-slate-600 mb-1">
                   Product Name / Title
                 </label>
                 <input
@@ -523,19 +523,19 @@ export default function AdminProducts({ currentUser }) {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. ActiveForce Haptic Pedal Upgrade"
-                  className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-[#e50914]"
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#e50914]"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                  <label className="block text-[10px] font-mono uppercase text-slate-600 mb-1">
                     Category
                   </label>
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#e50914]"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#e50914]"
                   >
                     <option value="Wheelbase">Wheelbase</option>
                     <option value="Steering Wheel">Steering Wheel</option>
@@ -557,7 +557,7 @@ export default function AdminProducts({ currentUser }) {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                  <label className="block text-[10px] font-mono uppercase text-slate-600 mb-1">
                     Price (INR ₹)
                   </label>
                   <input
@@ -568,14 +568,14 @@ export default function AdminProducts({ currentUser }) {
                     value={priceInr}
                     onChange={(e) => setPriceInr(e.target.value)}
                     placeholder="e.g. 48999"
-                    className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white font-mono placeholder-neutral-600 focus:outline-none focus:border-[#e50914]"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 font-mono placeholder-slate-400 focus:outline-none focus:border-[#e50914]"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                  <label className="block text-[10px] font-mono uppercase text-slate-600 mb-1">
                     Stock Quantity
                   </label>
                   <input
@@ -584,12 +584,12 @@ export default function AdminProducts({ currentUser }) {
                     required
                     value={stockQuantity}
                     onChange={(e) => setStockQuantity(e.target.value)}
-                    className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-[#e50914]"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 font-mono focus:outline-none focus:border-[#e50914]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                  <label className="block text-[10px] font-mono uppercase text-slate-600 mb-1">
                     Catalog Availability
                   </label>
                   <button
@@ -597,8 +597,8 @@ export default function AdminProducts({ currentUser }) {
                     onClick={() => setIsAvailable(!isAvailable)}
                     className={`w-full py-2 px-3 rounded-xl border text-xs font-mono font-bold uppercase transition-all flex items-center justify-center gap-2 ${
                       isAvailable
-                        ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
-                        : 'bg-neutral-800 border-white/10 text-neutral-400'
+                        ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                        : 'bg-slate-100 border-slate-300 text-slate-600'
                     }`}
                   >
                     {isAvailable ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
@@ -608,12 +608,12 @@ export default function AdminProducts({ currentUser }) {
               </div>
 
               <div>
-                <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                <label className="block text-[10px] font-mono uppercase text-slate-600 mb-1">
                   Product Image / Photo
                 </label>
 
                 {/* Live Photo Preview Box */}
-                <div className="mb-2 relative rounded-xl overflow-hidden border border-white/10 bg-black/60 h-48 flex items-center justify-center p-2">
+                <div className="mb-2 relative rounded-xl overflow-hidden border border-slate-200 bg-slate-50 h-48 flex items-center justify-center p-2">
                   {imageUrl ? (
                     <img
                       src={imageUrl}
@@ -634,14 +634,14 @@ export default function AdminProducts({ currentUser }) {
                       }}
                     />
                   ) : (
-                    <div className="flex flex-col items-center justify-center text-neutral-500 gap-1.5">
+                    <div className="flex flex-col items-center justify-center text-slate-400 gap-1.5">
                       <Image className="w-8 h-8 opacity-40" />
                       <span className="text-[11px] font-mono">No photo selected</span>
                     </div>
                   )}
 
                   {imageUrl && imageMeta && (
-                    <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-black/80 backdrop-blur-md border border-white/15 font-mono text-[10px] text-neutral-300 pointer-events-none">
+                    <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-white/90 backdrop-blur-md border border-slate-200 font-mono text-[10px] text-slate-700 pointer-events-none shadow-sm">
                       {imageMeta.width} × {imageMeta.height} px ({imageMeta.ratio}:1)
                     </span>
                   )}
@@ -653,7 +653,7 @@ export default function AdminProducts({ currentUser }) {
                         setImageUrl('');
                         setImageMeta(null);
                       }}
-                      className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/75 hover:bg-red-950/90 text-white/80 hover:text-red-400 border border-white/10 transition-colors"
+                      className="absolute top-2 right-2 p-1.5 rounded-lg bg-white/90 hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200 transition-colors shadow-sm"
                       title="Clear photo"
                     >
                       <X className="w-3.5 h-3.5" />
@@ -664,7 +664,7 @@ export default function AdminProducts({ currentUser }) {
                 {/* Upload from Device or Paste URL Controls */}
                 <div className="space-y-2">
                   <div>
-                    <label className="cursor-pointer flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-xs font-mono font-bold text-white transition-all shadow-sm">
+                    <label className="cursor-pointer flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-300 text-xs font-mono font-bold text-slate-700 transition-all shadow-sm">
                       <Upload className="w-3.5 h-3.5 text-[#e50914]" />
                       <span>Upload Photo from Device (PNG / JPG / WEBP)</span>
                       <input
@@ -677,7 +677,7 @@ export default function AdminProducts({ currentUser }) {
                   </div>
 
                   <div>
-                    <label className="block text-[9px] font-mono uppercase text-neutral-400 mb-0.5">
+                    <label className="block text-[9px] font-mono uppercase text-slate-500 mb-0.5">
                       Or Direct Image URL / Path
                     </label>
                     <input
@@ -686,14 +686,14 @@ export default function AdminProducts({ currentUser }) {
                       value={imageUrl}
                       onChange={(e) => setImageUrl(e.target.value)}
                       placeholder="https://... or /hero-backdrop-hd.jpg"
-                      className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-[#e50914]"
+                      className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#e50914]"
                     />
                   </div>
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                <label className="block text-[10px] font-mono uppercase text-slate-600 mb-1">
                   Specifications & Description
                 </label>
                 <textarea
@@ -701,7 +701,7 @@ export default function AdminProducts({ currentUser }) {
                   value={specDescription}
                   onChange={(e) => setSpecDescription(e.target.value)}
                   placeholder="Technical motorsport specifications..."
-                  className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-[#e50914]"
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#e50914]"
                 />
               </div>
 
@@ -709,7 +709,7 @@ export default function AdminProducts({ currentUser }) {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-neutral-300 text-xs font-bold transition-colors"
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-bold transition-colors"
                 >
                   Cancel
                 </button>
@@ -731,20 +731,20 @@ export default function AdminProducts({ currentUser }) {
       {/* ======================================================== */}
       {productToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div onClick={() => setProductToDelete(null)} className="absolute inset-0 bg-black/80 backdrop-blur-md" />
+          <div onClick={() => setProductToDelete(null)} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" />
 
-          <div className="relative z-10 w-full max-w-md bg-[#0f0003] border border-rose-500/40 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-4">
-            <div className="flex items-center gap-2.5 text-rose-400">
+          <div className="relative z-10 w-full max-w-md bg-white border border-rose-200 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-4">
+            <div className="flex items-center gap-2.5 text-rose-600">
               <AlertCircle className="w-5 h-5 shrink-0" />
-              <h3 className="font-display font-black text-xl uppercase tracking-tight text-white">
+              <h3 className="font-display font-black text-xl uppercase tracking-tight text-slate-900">
                 Deactivate / Delete Product
               </h3>
             </div>
 
-            <p className="text-xs text-neutral-300 leading-relaxed">
+            <p className="text-xs text-slate-700 leading-relaxed">
               Are you sure you want to deactivate <strong>{productToDelete.name}</strong>?
             </p>
-            <p className="text-[11px] text-neutral-400 bg-black/40 p-3 rounded-xl border border-white/5 leading-relaxed">
+            <p className="text-[11px] text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-200 leading-relaxed">
               <strong>Relational Safety Protection:</strong> If this product is referenced in historical customer orders, it will not be permanently deleted—it will be safely deactivated to preserve invoice and order records.
             </p>
 
@@ -752,7 +752,7 @@ export default function AdminProducts({ currentUser }) {
               <button
                 type="button"
                 onClick={() => setProductToDelete(null)}
-                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-neutral-300 text-xs font-bold transition-colors"
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-bold transition-colors"
               >
                 Cancel
               </button>

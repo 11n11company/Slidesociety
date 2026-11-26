@@ -619,26 +619,26 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
       {/* ======================================================== */}
       {/* ESSENTIAL FILTERS BAR                                    */}
       {/* ======================================================== */}
-      <div className="p-4 rounded-2xl bg-[#0f0003] border border-white/10 flex flex-col sm:flex-row gap-3 items-center justify-between">
+      <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-3 items-center justify-between">
         {/* Search */}
         <form onSubmit={handleSearchSubmit} className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-neutral-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search order number or customer..."
-            className="w-full bg-black/60 border border-white/10 rounded-xl pl-10 pr-3 py-2 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-[#e50914] transition-colors"
+            className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#e50914] transition-colors"
           />
         </form>
 
         {/* Status Filter */}
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <span className="text-[11px] font-mono uppercase text-neutral-400 shrink-0">Status:</span>
+          <span className="text-[11px] font-mono uppercase text-slate-500 shrink-0">Status:</span>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-black/60 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#e50914] transition-colors"
+            className="bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-[#e50914] transition-colors"
           >
             <option value="ALL">All Statuses</option>
             <option value="PENDING">Pending</option>
@@ -652,7 +652,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
           <button
             type="button"
             onClick={() => loadOrders(pagination.page)}
-            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-neutral-300 hover:text-white border border-white/10 transition-colors"
+            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border border-slate-200 transition-colors"
             title="Refresh Orders"
           >
             <RefreshCw className="w-4 h-4" />
@@ -663,18 +663,18 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
       {/* ======================================================== */}
       {/* ORDERS LIST TABLE                                        */}
       {/* ======================================================== */}
-      <div className="p-6 rounded-2xl bg-[#0f0003] border border-white/10 space-y-4">
+      <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
         {loading ? (
-          <div className="py-16 text-center text-neutral-400 flex flex-col items-center justify-center space-y-2">
+          <div className="py-16 text-center text-slate-400 flex flex-col items-center justify-center space-y-2">
             <RefreshCw className="w-5 h-5 animate-spin text-[#e50914]" />
             <span className="font-mono text-xs uppercase tracking-wider">Loading Orders...</span>
           </div>
         ) : error ? (
-          <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
+          <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
             {error}
           </div>
         ) : orders.length === 0 ? (
-          <div className="py-16 text-center text-neutral-500 font-mono text-xs">
+          <div className="py-16 text-center text-slate-400 font-mono text-xs">
             No orders match the current filter criteria.
           </div>
         ) : (
@@ -682,7 +682,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-white/5 text-neutral-400 font-mono text-[10px] uppercase tracking-wider">
+                  <tr className="border-b border-slate-200 text-slate-500 font-mono text-[10px] uppercase tracking-wider bg-slate-50">
                     <th className="py-3 px-3">Order Number</th>
                     <th className="py-3 px-3">Customer</th>
                     <th className="py-3 px-3">Date</th>
@@ -692,22 +692,22 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                     <th className="py-3 px-3 text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody className="divide-y divide-slate-100">
                   {orders.map((ord) => {
                     const payStatus = ord.payments?.[0]?.status || (['CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED'].includes(ord.status) ? 'CAPTURED' : 'PENDING');
                     return (
-                      <tr key={ord.id} className="hover:bg-white/[0.02] transition-colors">
-                        <td className="py-3.5 px-3 font-mono font-bold text-white">
+                      <tr key={ord.id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="py-3.5 px-3 font-mono font-bold text-slate-900">
                           {ord.orderNumber}
                         </td>
                         <td className="py-3.5 px-3">
-                          <div className="font-medium text-white">{ord.user?.fullName || 'Guest Customer'}</div>
-                          <div className="font-mono text-[10px] text-neutral-400">{ord.user?.email || 'N/A'}</div>
+                          <div className="font-medium text-slate-900">{ord.user?.fullName || 'Guest Customer'}</div>
+                          <div className="font-mono text-[10px] text-slate-500">{ord.user?.email || 'N/A'}</div>
                         </td>
-                        <td className="py-3.5 px-3 font-mono text-[11px] text-neutral-300">
+                        <td className="py-3.5 px-3 font-mono text-[11px] text-slate-600">
                           {new Date(ord.createdAt).toLocaleDateString()}
                         </td>
-                        <td className="py-3.5 px-3 font-mono font-bold text-white">
+                        <td className="py-3.5 px-3 font-mono font-bold text-slate-900">
                           {fmt(ord.totalAmount)}
                         </td>
                         <td className="py-3.5 px-3">
@@ -724,7 +724,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                           <button
                             type="button"
                             onClick={() => handleOpenDetail(ord.id)}
-                            className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-white/5 hover:bg-[#e50914] text-neutral-300 hover:text-white font-bold text-[11px] transition-colors"
+                            className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-slate-100 hover:bg-[#e50914] text-slate-700 hover:text-white font-bold text-[11px] transition-colors"
                           >
                             <Eye className="w-3.5 h-3.5" />
                             <span>View</span>
@@ -739,7 +739,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
 
             {/* Pagination Controls */}
             {pagination.totalPages > 1 && (
-              <div className="flex items-center justify-between pt-4 border-t border-white/5 text-xs text-neutral-400">
+              <div className="flex items-center justify-between pt-4 border-t border-slate-200 text-xs text-slate-500">
                 <span>
                   Showing page {pagination.page} of {pagination.totalPages} ({pagination.totalCount} total orders)
                 </span>
@@ -748,7 +748,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                     type="button"
                     disabled={pagination.page <= 1}
                     onClick={() => loadOrders(pagination.page - 1)}
-                    className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-30 text-white"
+                    className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-40 text-slate-700 border border-slate-200"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
@@ -756,7 +756,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                     type="button"
                     disabled={pagination.page >= pagination.totalPages}
                     onClick={() => loadOrders(pagination.page + 1)}
-                    className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-30 text-white"
+                    className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-40 text-slate-700 border border-slate-200"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
@@ -772,21 +772,21 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
       {/* ======================================================== */}
       {selectedOrderId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div onClick={() => setSelectedOrderId(null)} className="absolute inset-0 bg-black/80 backdrop-blur-md" />
+          <div onClick={() => setSelectedOrderId(null)} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" />
 
-          <div className="relative z-10 w-full max-w-3xl bg-[#0f0003] border border-white/20 rounded-3xl p-6 sm:p-8 shadow-2xl max-h-[90vh] flex flex-col">
+          <div className="relative z-10 w-full max-w-3xl bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-2xl max-h-[90vh] flex flex-col">
             {/* Modal Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-5 shrink-0">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-200 mb-5 shrink-0">
               <div className="flex items-center gap-2.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#e50914]" />
-                <h3 className="font-display font-black text-xl sm:text-2xl uppercase tracking-tight text-white">
+                <h3 className="font-display font-black text-xl sm:text-2xl uppercase tracking-tight text-slate-900">
                   {selectedOrder ? `Order ${selectedOrder.orderNumber}` : 'Order Inspection'}
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedOrderId(null)}
-                className="p-1.5 rounded-full text-neutral-400 hover:text-white hover:bg-white/10 transition-colors"
+                className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -795,20 +795,20 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
             {/* Modal Body */}
             <div className="flex-1 overflow-y-auto space-y-5 pr-1">
               {orderLoading ? (
-                <div className="py-16 text-center text-neutral-400 space-y-2">
+                <div className="py-16 text-center text-slate-500 space-y-2">
                   <RefreshCw className="w-5 h-5 animate-spin text-[#e50914] mx-auto" />
                   <div className="font-mono text-xs">Retrieving Order Telemetry...</div>
                 </div>
               ) : orderError ? (
-                <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
+                <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
                   {orderError}
                 </div>
               ) : selectedOrder ? (
                 <>
                   {/* Status Banner */}
-                  <div className="p-4 rounded-2xl bg-black/60 border border-white/10 flex flex-wrap items-center justify-between gap-3">
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <div className="text-[10px] font-mono uppercase text-neutral-400">Current Status</div>
+                      <div className="text-[10px] font-mono uppercase text-slate-500">Current Status</div>
                       <div className="flex items-center gap-2 mt-1">
                         <span className={`px-2.5 py-0.5 rounded-full text-xs font-mono font-bold uppercase border ${getStatusBadge(selectedOrder.status)}`}>
                           {selectedOrder.status}
@@ -819,8 +819,8 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-[10px] font-mono uppercase text-neutral-400">Total Grand Amount</div>
-                      <div className="text-lg font-mono font-black text-white mt-0.5">
+                      <div className="text-[10px] font-mono uppercase text-slate-500">Total Grand Amount</div>
+                      <div className="text-lg font-mono font-black text-slate-900 mt-0.5">
                         {fmt(selectedOrder.totalAmount)}
                       </div>
                     </div>
@@ -828,7 +828,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
 
                   {/* Feedback alerts */}
                   {statusSuccess && (
-                    <div className="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2 font-medium">
+                    <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2 font-medium">
                       <CheckCircle2 className="w-4 h-4 shrink-0" />
                       <span>{statusSuccess}</span>
                     </div>
@@ -837,42 +837,42 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                   {/* Customer & Fulfillment Info */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Customer Profile */}
-                    <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-2">
+                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
                       <div className="text-[10px] font-mono uppercase text-[#e50914] font-bold tracking-wider">
                         Customer Driver
                       </div>
-                      <div className="text-sm font-bold text-white">{selectedOrder.user?.fullName}</div>
-                      <div className="text-xs font-mono text-neutral-300">{selectedOrder.user?.email}</div>
+                      <div className="text-sm font-bold text-slate-900">{selectedOrder.user?.fullName}</div>
+                      <div className="text-xs font-mono text-slate-600">{selectedOrder.user?.email}</div>
                       {selectedOrder.user?.phone && (
-                        <div className="text-xs text-neutral-400">{selectedOrder.user.phone}</div>
+                        <div className="text-xs text-slate-500">{selectedOrder.user.phone}</div>
                       )}
                     </div>
 
                     {/* Shipping Address */}
-                    <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-1">
+                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
                       <div className="text-[10px] font-mono uppercase text-[#e50914] font-bold tracking-wider">
                         Shipping Address
                       </div>
                       {selectedOrder.shippingAddress ? (
-                        <div className="text-xs text-neutral-300 leading-relaxed">
-                          <div className="font-bold text-white">{selectedOrder.shippingAddress.fullName}</div>
+                        <div className="text-xs text-slate-600 leading-relaxed">
+                          <div className="font-bold text-slate-900">{selectedOrder.shippingAddress.fullName}</div>
                           <div>{selectedOrder.shippingAddress.street}</div>
                           <div>
                             {selectedOrder.shippingAddress.city}, {selectedOrder.shippingAddress.state} {selectedOrder.shippingAddress.postalCode}
                           </div>
                           <div>{selectedOrder.shippingAddress.country}</div>
-                          <div className="text-neutral-400 font-mono text-[11px] mt-1">
+                          <div className="text-slate-500 font-mono text-[11px] mt-1">
                             Phone: {selectedOrder.shippingAddress.phone}
                           </div>
                         </div>
                       ) : (
-                        <div className="text-xs text-neutral-500">No shipping address recorded.</div>
+                        <div className="text-xs text-slate-400">No shipping address recorded.</div>
                       )}
                     </div>
                   </div>
 
                   {/* Order Items & Fare Adjustment Card */}
-                  <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-4">
+                  <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
                     <div className="flex items-center justify-between">
                       <div className="text-[10px] font-mono uppercase text-[#e50914] font-bold tracking-wider">
                         Ordered Hardware &amp; Logistics Fare
@@ -898,7 +898,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                             setFareAndItemsError('');
                             setFareAndItemsSuccess('');
                           }}
-                          className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-[#e50914] text-white text-[11px] font-bold transition-all flex items-center gap-1.5"
+                          className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-[#e50914] hover:text-white text-slate-700 border border-slate-200 text-[11px] font-bold transition-all flex items-center gap-1.5"
                         >
                           <Edit3 className="w-3 h-3" />
                           <span>{isEditingFareAndItems ? 'Cancel Editing' : 'Edit Items & Fare'}</span>
@@ -907,14 +907,14 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                     </div>
 
                     {fareAndItemsSuccess && (
-                      <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
+                      <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 shrink-0" />
                         <span>{fareAndItemsSuccess}</span>
                       </div>
                     )}
 
                     {fareAndItemsError && (
-                      <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+                      <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
                         <AlertCircle className="w-4 h-4 shrink-0" />
                         <span>{fareAndItemsError}</span>
                       </div>
@@ -923,16 +923,16 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                     {/* View Mode */}
                     {!isEditingFareAndItems ? (
                       <div className="space-y-3">
-                        <div className="divide-y divide-white/5">
+                        <div className="divide-y divide-slate-100">
                           {selectedOrder.items?.map((item) => (
                             <div key={item.id} className="py-2.5 flex items-center justify-between text-xs">
                               <div>
-                                <div className="font-bold text-white">{item.productName}</div>
-                                <div className="text-[10px] font-mono text-neutral-400">
+                                <div className="font-bold text-slate-900">{item.productName}</div>
+                                <div className="text-[10px] font-mono text-slate-500">
                                   {item.categorySnapshot || item.productCategory} • Qty: {item.quantity} × {fmt(item.unitPrice)}
                                 </div>
                               </div>
-                              <div className="font-mono font-bold text-white">
+                              <div className="font-mono font-bold text-slate-900">
                                 {fmt(item.totalPrice || item.lineTotal || (item.unitPrice * item.quantity))}
                               </div>
                             </div>
@@ -940,26 +940,26 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                         </div>
 
                         {/* Financial Totals Breakdown */}
-                        <div className="pt-3 border-t border-white/5 space-y-1.5 text-xs text-neutral-300 font-mono">
+                        <div className="pt-3 border-t border-slate-100 space-y-1.5 text-xs text-slate-600 font-mono">
                           <div className="flex justify-between">
-                            <span className="text-neutral-400">Subtotal ({selectedOrder.items?.length || 0} items)</span>
-                            <span className="text-white font-bold">{fmt(selectedOrder.subtotal)}</span>
+                            <span className="text-slate-500">Subtotal ({selectedOrder.items?.length || 0} items)</span>
+                            <span className="text-slate-900 font-bold">{fmt(selectedOrder.subtotal)}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-neutral-400">GST (18% included)</span>
-                            <span className="text-neutral-300">{fmt(selectedOrder.taxAmount)}</span>
+                            <span className="text-slate-500">GST (18% included)</span>
+                            <span className="text-slate-600">{fmt(selectedOrder.taxAmount)}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-neutral-400">Express Logistics Fare</span>
-                            <span className="text-neutral-300">{fmt(selectedOrder.shippingAmount)}</span>
+                            <span className="text-slate-500">Express Logistics Fare</span>
+                            <span className="text-slate-600">{fmt(selectedOrder.shippingAmount)}</span>
                           </div>
                           {Number(selectedOrder.discountAmount) > 0 && (
-                            <div className="flex justify-between text-emerald-400">
+                            <div className="flex justify-between text-emerald-600 font-semibold">
                               <span>Special Discount</span>
                               <span>-{fmt(selectedOrder.discountAmount)}</span>
                             </div>
                           )}
-                          <div className="flex justify-between pt-2 border-t border-white/10 text-sm font-bold text-white">
+                          <div className="flex justify-between pt-2 border-t border-slate-200 text-sm font-bold text-slate-900">
                             <span>Grand Total</span>
                             <span className="text-[#e50914]">{fmt(selectedOrder.totalAmount)}</span>
                           </div>
@@ -970,49 +970,49 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                       <form onSubmit={handleSaveFareAndItems} className="space-y-4">
                         <div className="space-y-2.5">
                           {editItems.map((item, idx) => (
-                            <div key={idx} className="p-3 rounded-xl bg-black/50 border border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                            <div key={idx} className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
                               <div className="flex-1 min-w-0">
-                                <div className="font-bold text-white truncate">{item.productName}</div>
-                                <div className="text-[10px] font-mono text-neutral-400">{item.productCategory}</div>
+                                <div className="font-bold text-slate-900 truncate">{item.productName}</div>
+                                <div className="text-[10px] font-mono text-slate-500">{item.productCategory}</div>
                               </div>
 
                               <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
                                 {/* Unit price override */}
                                 <div className="flex items-center gap-1.5 font-mono">
-                                  <span className="text-neutral-400 text-[11px]">₹</span>
+                                  <span className="text-slate-500 text-[11px]">₹</span>
                                   <input
                                     type="number"
                                     min="0"
                                     value={item.unitPrice}
                                     onChange={(e) => handleUpdateItemPrice(idx, e.target.value)}
-                                    className="w-20 bg-black/60 border border-white/15 rounded-lg px-2 py-1 text-xs text-white text-right font-mono focus:outline-none focus:border-[#e50914]"
+                                    className="w-20 bg-white border border-slate-300 rounded-lg px-2 py-1 text-xs text-slate-900 text-right font-mono focus:outline-none focus:border-[#e50914]"
                                     title="Unit Price"
                                   />
                                 </div>
 
                                 {/* Quantity stepper */}
-                                <div className="flex items-center border border-white/15 rounded-lg bg-black/40 overflow-hidden">
+                                <div className="flex items-center border border-slate-300 rounded-lg bg-white overflow-hidden">
                                   <button
                                     type="button"
                                     onClick={() => handleUpdateItemQty(idx, -1)}
-                                    className="p-1 text-neutral-400 hover:text-white"
+                                    className="p-1 text-slate-400 hover:text-slate-700"
                                   >
                                     <Minus className="w-3 h-3" />
                                   </button>
-                                  <span className="px-2 text-xs font-mono font-bold text-white">
+                                  <span className="px-2 text-xs font-mono font-bold text-slate-900">
                                     {item.quantity}
                                   </span>
                                   <button
                                     type="button"
                                     onClick={() => handleUpdateItemQty(idx, 1)}
-                                    className="p-1 text-neutral-400 hover:text-white"
+                                    className="p-1 text-slate-400 hover:text-slate-700"
                                   >
                                     <Plus className="w-3 h-3" />
                                   </button>
                                 </div>
 
                                 {/* Line total */}
-                                <div className="w-24 text-right font-mono font-bold text-white">
+                                <div className="w-24 text-right font-mono font-bold text-slate-900">
                                   {fmt(item.unitPrice * item.quantity)}
                                 </div>
 
@@ -1020,7 +1020,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                                 <button
                                   type="button"
                                   onClick={() => handleRemoveItem(idx)}
-                                  className="text-neutral-400 hover:text-rose-400 transition-colors p-1"
+                                  className="text-slate-400 hover:text-rose-600 transition-colors p-1"
                                   title="Remove item"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
@@ -1031,11 +1031,11 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                         </div>
 
                         {/* Add Item to Order selector */}
-                        <div className="p-3 rounded-xl bg-black/30 border border-white/10 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 text-xs">
+                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 text-xs">
                           <select
                             value={selectedProductToAdd}
                             onChange={(e) => setSelectedProductToAdd(e.target.value)}
-                            className="flex-1 bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#e50914]"
+                            className="flex-1 bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#e50914]"
                           >
                             <option value="">Select component to add to order...</option>
                             {catalogProducts.map(p => (
@@ -1048,7 +1048,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                             type="button"
                             onClick={handleAddItemToOrder}
                             disabled={!selectedProductToAdd}
-                            className="px-4 py-2 rounded-xl bg-white/10 hover:bg-[#e50914] text-white font-bold disabled:opacity-40 transition-all flex items-center justify-center gap-1.5 uppercase tracking-wider text-[11px]"
+                            className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-[#e50914] hover:text-white text-slate-800 font-bold disabled:opacity-40 transition-all flex items-center justify-center gap-1.5 uppercase tracking-wider text-[11px]"
                           >
                             <Plus className="w-3.5 h-3.5" />
                             <span>Add Component</span>
@@ -1058,7 +1058,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                         {/* Fare & Discount Adjustments */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs">
                           <div>
-                            <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                            <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
                               Logistics / Shipping Fare (₹)
                             </label>
                             <input
@@ -1067,11 +1067,11 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                               value={editShipping}
                               onChange={(e) => setEditShipping(e.target.value)}
                               placeholder="0"
-                              className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-[#e50914]"
+                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 font-mono focus:outline-none focus:border-[#e50914]"
                             />
                           </div>
                           <div>
-                            <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                            <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
                               Special Discount (₹)
                             </label>
                             <input
@@ -1080,32 +1080,32 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                               value={editDiscount}
                               onChange={(e) => setEditDiscount(e.target.value)}
                               placeholder="0"
-                              className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-[#e50914]"
+                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 font-mono focus:outline-none focus:border-[#e50914]"
                             />
                           </div>
                         </div>
 
                         {/* Live calculation preview */}
-                        <div className="p-3 rounded-xl bg-black/60 border border-white/10 space-y-1.5 text-xs font-mono">
+                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5 text-xs font-mono">
                           {(() => {
                             const curSubtotal = editItems.reduce((sum, it) => sum + (Number(it.unitPrice) * Number(it.quantity)), 0);
                             const curTax = Math.round(curSubtotal * 0.18);
                             const curTotal = Math.max(0, curSubtotal + Number(editShipping || 0) - Number(editDiscount || 0));
                             return (
                               <>
-                                <div className="flex justify-between text-neutral-400">
+                                <div className="flex justify-between text-slate-500">
                                   <span>Calculated Subtotal:</span>
-                                  <span className="text-white font-bold">{fmt(curSubtotal)}</span>
+                                  <span className="text-slate-900 font-bold">{fmt(curSubtotal)}</span>
                                 </div>
-                                <div className="flex justify-between text-neutral-400">
+                                <div className="flex justify-between text-slate-500">
                                   <span>GST (18% included):</span>
-                                  <span className="text-neutral-300">{fmt(curTax)}</span>
+                                  <span className="text-slate-700">{fmt(curTax)}</span>
                                 </div>
-                                <div className="flex justify-between text-neutral-400">
+                                <div className="flex justify-between text-slate-500">
                                   <span>Logistics Fare:</span>
-                                  <span className="text-neutral-300">{fmt(Number(editShipping || 0))}</span>
+                                  <span className="text-slate-700">{fmt(Number(editShipping || 0))}</span>
                                 </div>
-                                <div className="flex justify-between text-sm font-bold text-white pt-1.5 border-t border-white/10">
+                                <div className="flex justify-between text-sm font-bold text-slate-900 pt-1.5 border-t border-slate-200">
                                   <span>Updated Total:</span>
                                   <span className="text-[#e50914]">{fmt(curTotal)}</span>
                                 </div>
@@ -1119,14 +1119,14 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                           <button
                             type="submit"
                             disabled={savingFareAndItems || editItems.length === 0}
-                            className="px-5 py-2.5 rounded-xl bg-[#e50914] hover:bg-[#ff1801] text-white font-bold text-xs uppercase tracking-wider transition-all shadow-md shadow-[#e50914]/30 disabled:opacity-50"
+                            className="px-5 py-2.5 rounded-xl bg-[#e50914] hover:bg-[#ff1801] text-white font-bold text-xs uppercase tracking-wider transition-all shadow-md shadow-[#e50914]/20 disabled:opacity-50"
                           >
                             {savingFareAndItems ? 'Saving Changes...' : 'Save Fare & Items'}
                           </button>
                           <button
                             type="button"
                             onClick={() => setIsEditingFareAndItems(false)}
-                            className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-neutral-300 hover:text-white text-xs font-bold transition-all"
+                            className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-bold transition-all"
                           >
                             Cancel
                           </button>
@@ -1136,7 +1136,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                   </div>
 
                   {/* Payment Recording & Order Confirmation Panel */}
-                  <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-3">
+                  <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <CreditCard className="w-4 h-4 text-[#e50914]" />
@@ -1150,14 +1150,14 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                     </div>
 
                     {paymentSuccess && (
-                      <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
+                      <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 shrink-0" />
                         <span>{paymentSuccess}</span>
                       </div>
                     )}
 
                     {paymentError && (
-                      <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+                      <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
                         <AlertCircle className="w-4 h-4 shrink-0" />
                         <span>{paymentError}</span>
                       </div>
@@ -1165,35 +1165,35 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
 
                     {/* Captured Payment Display */}
                     {selectedOrder.payments?.some(p => p.status === 'CAPTURED') ? (
-                      <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-mono space-y-1">
-                        <div className="text-emerald-400 font-bold flex items-center gap-1.5">
+                      <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-mono space-y-1">
+                        <div className="text-emerald-700 font-bold flex items-center gap-1.5">
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           <span>Payment Captured &amp; Verified</span>
                         </div>
                         {selectedOrder.payments.filter(p => p.status === 'CAPTURED').map(p => (
-                          <div key={p.id} className="text-neutral-300 text-[11px] pt-1">
-                            <div>Method: <strong className="text-white uppercase">{p.method || 'UPI/Transfer'}</strong> • Amount: <strong className="text-white">{fmt(p.amount)}</strong></div>
-                            <div className="text-neutral-400 text-[10px]">Reference: {p.providerPaymentId || 'N/A'} • Date: {new Date(p.paidAt || p.createdAt).toLocaleString()}</div>
+                          <div key={p.id} className="text-slate-700 text-[11px] pt-1">
+                            <div>Method: <strong className="text-slate-900 uppercase">{p.method || 'UPI/Transfer'}</strong> • Amount: <strong className="text-slate-900">{fmt(p.amount)}</strong></div>
+                            <div className="text-slate-500 text-[10px]">Reference: {p.providerPaymentId || 'N/A'} • Date: {new Date(p.paidAt || p.createdAt).toLocaleString()}</div>
                           </div>
                         ))}
                       </div>
                     ) : (
                       /* Payment Pending: Record Manual Payment & Confirm Form */
                       !isSupport && selectedOrder.status !== 'CANCELLED' && (
-                        <form onSubmit={handleRecordPayment} className="p-3.5 rounded-xl bg-black/30 border border-white/10 space-y-3">
-                          <div className="text-xs text-neutral-300 leading-snug">
+                        <form onSubmit={handleRecordPayment} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+                          <div className="text-xs text-slate-600 leading-snug">
                             Record customer payment (UPI, Bank Transfer, Cash) to confirm order and automatically generate the official Tax Invoice.
                           </div>
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                             <div>
-                              <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                              <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
                                 Payment Method *
                               </label>
                               <select
                                 value={payMethod}
                                 onChange={(e) => setPayMethod(e.target.value)}
-                                className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#e50914]"
+                                className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-[#e50914]"
                               >
                                 <option value="UPI">UPI (Google Pay, PhonePe, Paytm)</option>
                                 <option value="BANK_TRANSFER">Bank Transfer (NEFT / IMPS / RTGS)</option>
@@ -1204,7 +1204,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                             </div>
 
                             <div>
-                              <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                              <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
                                 Amount Paid (₹) *
                               </label>
                               <input
@@ -1213,12 +1213,12 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                                 required
                                 value={payAmount}
                                 onChange={(e) => setPayAmount(e.target.value)}
-                                className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-[#e50914]"
+                                className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 font-mono focus:outline-none focus:border-[#e50914]"
                               />
                             </div>
 
                             <div>
-                              <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                              <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
                                 Transaction / UTR Ref *
                               </label>
                               <input
@@ -1227,12 +1227,12 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                                 value={payRef}
                                 onChange={(e) => setPayRef(e.target.value)}
                                 placeholder="e.g. UPI/492019481928 or NEFT UTR"
-                                className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-[#e50914]"
+                                className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 font-mono focus:outline-none focus:border-[#e50914]"
                               />
                             </div>
 
                             <div>
-                              <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                              <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
                                 Admin Notes (Optional)
                               </label>
                               <input
@@ -1240,7 +1240,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                                 value={payNotes}
                                 onChange={(e) => setPayNotes(e.target.value)}
                                 placeholder="e.g. Screenshot verified via WhatsApp"
-                                className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#e50914]"
+                                className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-[#e50914]"
                               />
                             </div>
                           </div>
@@ -1251,17 +1251,17 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                               id="autoConfirmOrder"
                               checked={payAutoConfirm}
                               onChange={(e) => setPayAutoConfirm(e.target.checked)}
-                              className="rounded border-white/20 bg-black/60 text-[#e50914] focus:ring-0"
+                              className="rounded border-slate-300 bg-white text-[#e50914] focus:ring-0"
                             />
-                            <label htmlFor="autoConfirmOrder" className="text-xs text-neutral-300 font-mono">
-                              Set Order Status to <strong className="text-emerald-400">CONFIRMED</strong> immediately
+                            <label htmlFor="autoConfirmOrder" className="text-xs text-slate-700 font-mono">
+                              Set Order Status to <strong className="text-emerald-700 font-semibold">CONFIRMED</strong> immediately
                             </label>
                           </div>
 
                           <button
                             type="submit"
                             disabled={recordingPayment || !payRef.trim() || !payAmount}
-                            className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider transition-all disabled:opacity-50 flex items-center gap-2 shadow-md shadow-emerald-600/30"
+                            className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider transition-all disabled:opacity-50 flex items-center gap-2 shadow-md shadow-emerald-600/20"
                           >
                             <Check className="w-4 h-4" />
                             <span>{recordingPayment ? 'Recording Payment...' : 'Record Payment & Confirm Order'}</span>
@@ -1272,7 +1272,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                   </div>
 
                   {/* Tax Invoice & Customer Bill Sharing Card */}
-                  <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-3">
+                  <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <FileText className="w-4 h-4 text-[#e50914]" />
@@ -1281,14 +1281,14 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                         </span>
                       </div>
                       {selectedOrder.invoice && (
-                        <span className="text-emerald-400 font-mono text-xs font-bold">
+                        <span className="text-emerald-700 font-mono text-xs font-bold">
                           {selectedOrder.invoice.invoiceNumber}
                         </span>
                       )}
                     </div>
 
                     {invoiceActionMsg && (
-                      <div className="p-3 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-300 text-xs flex items-center gap-2">
+                      <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 text-xs flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 shrink-0" />
                         <span>{invoiceActionMsg}</span>
                       </div>
@@ -1297,11 +1297,11 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                     <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
                       <div>
                         {selectedOrder.invoice ? (
-                          <div className="text-neutral-300 font-mono text-[11px]">
-                            Generated on {new Date(selectedOrder.invoice.createdAt).toLocaleDateString()} • Total: <strong className="text-white">{fmt(selectedOrder.invoice.totalAmount)}</strong>
+                          <div className="text-slate-600 font-mono text-[11px]">
+                            Generated on {new Date(selectedOrder.invoice.createdAt).toLocaleDateString()} • Total: <strong className="text-slate-900">{fmt(selectedOrder.invoice.totalAmount)}</strong>
                           </div>
                         ) : (
-                          <div className="text-neutral-500 text-xs">
+                          <div className="text-slate-500 text-xs">
                             Official invoice generates automatically upon payment confirmation or manually below.
                           </div>
                         )}
@@ -1316,7 +1316,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                               type="button"
                               disabled={generatingInvoice}
                               onClick={handleGenerateInvoice}
-                              className="px-3 py-1.5 rounded-lg bg-[#e50914] hover:bg-[#ff1801] text-white text-xs font-bold transition-all flex items-center gap-1.5 uppercase tracking-wider"
+                              className="px-3 py-1.5 rounded-lg bg-[#e50914] hover:bg-[#ff1801] text-white text-xs font-bold transition-all flex items-center gap-1.5 uppercase tracking-wider shadow-sm"
                             >
                               <FileText className="w-3.5 h-3.5" />
                               <span>{generatingInvoice ? 'Generating...' : 'Generate Bill / Invoice'}</span>
@@ -1329,7 +1329,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                               type="button"
                               disabled={downloadingInvoice}
                               onClick={() => handleDownloadInvoice(selectedOrder.invoice)}
-                              className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-[#e50914] text-white text-xs font-bold transition-colors flex items-center gap-1.5"
+                              className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-[#e50914] hover:text-white text-slate-700 border border-slate-200 text-xs font-bold transition-colors flex items-center gap-1.5"
                               title="Download PDF Tax Invoice"
                             >
                               <Download className="w-3.5 h-3.5" />
@@ -1340,10 +1340,10 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                             <button
                               type="button"
                               onClick={handleShareInvoiceWhatsApp}
-                              className="px-3 py-1.5 rounded-lg bg-[#25D366] hover:bg-[#20ba59] text-black text-xs font-black transition-all flex items-center gap-1.5 shadow-md shadow-[#25D366]/20"
+                              className="px-3 py-1.5 rounded-lg bg-[#25D366] hover:bg-[#20ba59] text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
                               title="Share Invoice & Download Link with Customer via WhatsApp"
                             >
-                              <MessageCircle className="w-3.5 h-3.5 fill-black" />
+                              <MessageCircle className="w-3.5 h-3.5 fill-white" />
                               <span>Share via WhatsApp</span>
                             </button>
 
@@ -1352,7 +1352,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                               type="button"
                               disabled={sendingInvoiceEmail}
                               onClick={handleSendInvoiceEmail}
-                              className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-colors flex items-center gap-1.5"
+                              className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-bold transition-colors flex items-center gap-1.5"
                               title="Email Official Invoice PDF to Customer"
                             >
                               <Send className="w-3.5 h-3.5" />
@@ -1365,7 +1365,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                                 type="button"
                                 disabled={generatingInvoice}
                                 onClick={handleGenerateInvoice}
-                                className="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-neutral-300 hover:text-white text-xs font-mono transition-colors flex items-center gap-1"
+                                className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 text-xs font-mono transition-colors flex items-center gap-1"
                                 title="Regenerate invoice if items or fare were updated"
                               >
                                 <RefreshCw className={`w-3 h-3 ${generatingInvoice ? 'animate-spin' : ''}`} />
@@ -1379,7 +1379,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                   </div>
 
                   {/* Shipment & Logistics Management Card */}
-                  <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-3">
+                  <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Truck className="w-4 h-4 text-[#e50914]" />
@@ -1395,14 +1395,14 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                     </div>
 
                     {shipmentSuccess && (
-                      <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2 font-medium">
+                      <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2 font-medium">
                         <CheckCircle2 className="w-4 h-4 shrink-0" />
                         <span>{shipmentSuccess}</span>
                       </div>
                     )}
 
                     {shipmentError && (
-                      <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2 font-medium">
+                      <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2 font-medium">
                         <AlertCircle className="w-4 h-4 shrink-0" />
                         <span>{shipmentError}</span>
                       </div>
@@ -1413,13 +1413,13 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                         {!isEditingShipment ? (
                           <>
                             {/* Shipment metadata display */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs bg-black/30 p-3.5 rounded-xl border border-white/5 font-mono">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs bg-slate-50 p-3.5 rounded-xl border border-slate-200 font-mono">
                               <div>
-                                <span className="text-neutral-500 block text-[10px] uppercase">Courier Partner</span>
-                                <span className="font-bold text-white text-sm">{selectedOrder.shipment.courierName}</span>
+                                <span className="text-slate-500 block text-[10px] uppercase">Courier Partner</span>
+                                <span className="font-bold text-slate-900 text-sm">{selectedOrder.shipment.courierName}</span>
                               </div>
                               <div>
-                                <span className="text-neutral-500 block text-[10px] uppercase">Tracking Consignment</span>
+                                <span className="text-slate-500 block text-[10px] uppercase">Tracking Consignment</span>
                                 {selectedOrder.shipment.trackingUrl ? (
                                   <a
                                     href={selectedOrder.shipment.trackingUrl}
@@ -1431,12 +1431,12 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                                     <span>↗</span>
                                   </a>
                                 ) : (
-                                  <span className="font-bold text-white text-sm">{selectedOrder.shipment.trackingNumber}</span>
+                                  <span className="font-bold text-slate-900 text-sm">{selectedOrder.shipment.trackingNumber}</span>
                                 )}
                               </div>
                               <div>
-                                <span className="text-neutral-500 block text-[10px] uppercase">Est. Delivery</span>
-                                <span className="text-neutral-300">
+                                <span className="text-slate-500 block text-[10px] uppercase">Est. Delivery</span>
+                                <span className="text-slate-700">
                                   {selectedOrder.shipment.estimatedDeliveryAt
                                     ? new Date(selectedOrder.shipment.estimatedDeliveryAt).toLocaleDateString()
                                     : 'Not specified'}
@@ -1444,40 +1444,40 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                               </div>
                               {selectedOrder.shipment.dispatchedAt && (
                                 <div>
-                                  <span className="text-neutral-500 block text-[10px] uppercase">Dispatched At</span>
-                                  <span className="text-cyan-400">
+                                  <span className="text-slate-500 block text-[10px] uppercase">Dispatched At</span>
+                                  <span className="text-blue-600 font-semibold">
                                     {new Date(selectedOrder.shipment.dispatchedAt).toLocaleString()}
                                   </span>
                                 </div>
                               )}
                               {selectedOrder.shipment.deliveredAt && (
                                 <div>
-                                  <span className="text-neutral-500 block text-[10px] uppercase">Delivered At</span>
-                                  <span className="text-emerald-400">
+                                  <span className="text-slate-500 block text-[10px] uppercase">Delivered At</span>
+                                  <span className="text-emerald-700 font-semibold">
                                     {new Date(selectedOrder.shipment.deliveredAt).toLocaleString()}
                                   </span>
                                 </div>
                               )}
                               {selectedOrder.shipment.failureReason && (
                                 <div className="sm:col-span-2">
-                                  <span className="text-rose-400 block text-[10px] uppercase font-bold">Failure Reason</span>
-                                  <span className="text-rose-300">{selectedOrder.shipment.failureReason}</span>
+                                  <span className="text-rose-600 block text-[10px] uppercase font-bold">Failure Reason</span>
+                                  <span className="text-rose-700">{selectedOrder.shipment.failureReason}</span>
                                 </div>
                               )}
                             </div>
 
                             {selectedOrder.shipment.notes && (
-                              <div className="text-xs text-neutral-400 italic bg-black/20 p-2.5 rounded-lg border border-white/5">
+                              <div className="text-xs text-slate-600 italic bg-slate-50 p-2.5 rounded-lg border border-slate-200">
                                 Dispatcher Notes: "{selectedOrder.shipment.notes}"
                               </div>
                             )}
 
                             {/* Option to Update Shipping Details */}
-                            <div className="pt-2 border-t border-white/5 flex items-center justify-between">
+                            <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
                               <button
                                 type="button"
                                 onClick={() => startEditingShipment(selectedOrder.shipment)}
-                                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-[#e50914] text-white text-xs font-bold transition-all flex items-center gap-2 uppercase tracking-wider"
+                                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-[#e50914] hover:text-white text-slate-800 border border-slate-200 text-xs font-bold transition-all flex items-center gap-2 uppercase tracking-wider"
                               >
                                 <Truck className="w-3.5 h-3.5" />
                                 <span>Update Shipping Details</span>
@@ -1486,16 +1486,16 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                           </>
                         ) : (
                           /* Edit Shipping Details Form */
-                          <form onSubmit={handleUpdateShipmentDetails} className="p-4 rounded-xl bg-black/30 border border-white/10 space-y-3">
-                            <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
-                              <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                          <form onSubmit={handleUpdateShipmentDetails} className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+                            <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
+                              <span className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
                                 <Truck className="w-3.5 h-3.5 text-[#e50914]" />
                                 <span>Update Shipping Details</span>
                               </span>
                               <button
                                 type="button"
                                 onClick={() => setIsEditingShipment(false)}
-                                className="text-neutral-400 hover:text-white text-xs font-mono"
+                                className="text-slate-500 hover:text-slate-800 text-xs font-mono"
                               >
                                 Cancel
                               </button>
@@ -1503,7 +1503,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                               <div>
-                                <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                                <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
                                   Courier Partner *
                                 </label>
                                 <input
@@ -1512,12 +1512,12 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                                   value={editCourier}
                                   onChange={(e) => setEditCourier(e.target.value)}
                                   placeholder="e.g. BlueDart Express, Delhivery, DHL"
-                                  className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#e50914]"
+                                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#e50914]"
                                 />
                               </div>
 
                               <div>
-                                <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                                <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
                                   Tracking / AWB Number *
                                 </label>
                                 <input
@@ -1526,12 +1526,12 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                                   value={editTrackingNumber}
                                   onChange={(e) => setEditTrackingNumber(e.target.value)}
                                   placeholder="e.g. BLUEDART1029384"
-                                  className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#e50914]"
+                                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#e50914]"
                                 />
                               </div>
 
                               <div>
-                                <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                                <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
                                   Tracking Link / URL (Optional)
                                 </label>
                                 <input
@@ -1539,30 +1539,30 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                                   value={editTrackingUrl}
                                   onChange={(e) => setEditTrackingUrl(e.target.value)}
                                   placeholder="https://track.bluedart.com/..."
-                                  className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-[#e50914]"
+                                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#e50914]"
                                 />
                               </div>
 
                               <div>
-                                <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                                <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
                                   Estimated Delivery Date (Optional)
                                 </label>
                                 <input
                                   type="date"
                                   value={editEstDelivery}
                                   onChange={(e) => setEditEstDelivery(e.target.value)}
-                                  className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#e50914]"
+                                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#e50914]"
                                 />
                               </div>
 
                               <div>
-                                <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                                <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
                                   Shipment Status
                                 </label>
                                 <select
                                   value={editShipmentStatus}
                                   onChange={(e) => setEditShipmentStatus(e.target.value)}
-                                  className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#e50914]"
+                                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#e50914]"
                                 >
                                   <option value="READY_FOR_DISPATCH">READY FOR DISPATCH</option>
                                   <option value="SHIPPED">SHIPPED</option>
@@ -1575,7 +1575,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                               </div>
 
                               <div>
-                                <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                                <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
                                   Dispatcher Notes (Optional)
                                 </label>
                                 <input
@@ -1583,7 +1583,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                                   value={editNotes}
                                   onChange={(e) => setEditNotes(e.target.value)}
                                   placeholder="Internal notes or dispatch comments..."
-                                  className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-[#e50914]"
+                                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#e50914]"
                                 />
                               </div>
                             </div>
@@ -1592,14 +1592,14 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                               <button
                                 type="submit"
                                 disabled={updatingShipment || !editCourier.trim() || !editTrackingNumber.trim()}
-                                className="px-5 py-2 rounded-xl bg-[#e50914] hover:bg-[#ff1801] disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider transition-all"
+                                className="px-5 py-2 rounded-xl bg-[#e50914] hover:bg-[#ff1801] disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-sm"
                               >
                                 {updatingShipment ? 'Saving Details...' : 'Save Shipping Details'}
                               </button>
                               <button
                                 type="button"
                                 onClick={() => setIsEditingShipment(false)}
-                                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-neutral-300 text-xs font-bold transition-all"
+                                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-bold transition-all"
                               >
                                 Cancel
                               </button>
@@ -1611,7 +1611,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                       <div>
                         {/* Prepare Shipment Form or Notice */}
                         {selectedOrder.status === 'CANCELLED' ? (
-                          <div className="text-xs text-neutral-500 font-mono">
+                          <div className="text-xs text-slate-400 font-mono">
                             Order is cancelled. Consignments cannot be dispatched for cancelled orders.
                           </div>
                         ) : selectedOrder.payments?.some(p => p.status === 'CAPTURED') ? (
@@ -1621,28 +1621,28 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                                 <button
                                   type="button"
                                   onClick={() => setShowCreateShipment(true)}
-                                  className="px-4 py-2 rounded-xl bg-white/10 hover:bg-[#e50914] text-white text-xs font-bold transition-all flex items-center gap-2 uppercase tracking-wider"
+                                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-[#e50914] hover:text-white text-slate-800 border border-slate-200 text-xs font-bold transition-all flex items-center gap-2 uppercase tracking-wider"
                                 >
                                   <Truck className="w-3.5 h-3.5" />
                                   <span>Prepare &amp; Assign Shipment</span>
                                 </button>
                               ) : (
-                                <form onSubmit={handleCreateShipment} className="p-3.5 rounded-xl bg-black/30 border border-white/10 space-y-3">
+                                <form onSubmit={handleCreateShipment} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
                                   <div className="flex items-center justify-between">
-                                    <span className="text-xs font-bold text-white uppercase tracking-wider">
+                                    <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">
                                       New Consignment Details
                                     </span>
                                     <button
                                       type="button"
                                       onClick={() => setShowCreateShipment(false)}
-                                      className="text-neutral-400 hover:text-white text-xs"
+                                      className="text-slate-400 hover:text-slate-700 text-xs"
                                     >
                                       Cancel
                                     </button>
                                   </div>
                                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                                     <div>
-                                      <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                                      <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
                                         Courier Partner *
                                       </label>
                                       <input
@@ -1650,12 +1650,12 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                                         value={shipmentCourier}
                                         onChange={(e) => setShipmentCourier(e.target.value)}
                                         placeholder="e.g. BlueDart Express, Delhivery, DHL"
-                                        className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#e50914]"
+                                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-[#e50914]"
                                         required
                                       />
                                     </div>
                                     <div>
-                                      <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                                      <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
                                         Tracking / AWB Number *
                                       </label>
                                       <input
@@ -1663,12 +1663,12 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                                         value={shipmentTrackingNumber}
                                         onChange={(e) => setShipmentTrackingNumber(e.target.value)}
                                         placeholder="e.g. BD948201847IN"
-                                        className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#e50914]"
+                                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-[#e50914]"
                                         required
                                       />
                                     </div>
                                     <div>
-                                      <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                                      <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
                                         Tracking Link / URL (Optional)
                                       </label>
                                       <input
@@ -1676,22 +1676,22 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                                         value={shipmentTrackingUrl}
                                         onChange={(e) => setShipmentTrackingUrl(e.target.value)}
                                         placeholder="https://track.courier.com/BD948201847IN"
-                                        className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#e50914]"
+                                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#e50914]"
                                       />
                                     </div>
                                     <div>
-                                      <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                                      <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
                                         Estimated Delivery Date (Optional)
                                       </label>
                                       <input
                                         type="date"
                                         value={shipmentEstDelivery}
                                         onChange={(e) => setShipmentEstDelivery(e.target.value)}
-                                        className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#e50914]"
+                                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-[#e50914]"
                                       />
                                     </div>
                                     <div className="sm:col-span-2">
-                                      <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                                      <label className="block text-[10px] font-mono uppercase text-slate-500 mb-1">
                                         Dispatcher Notes (Optional)
                                       </label>
                                       <input
@@ -1699,14 +1699,14 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                                         value={shipmentNotes}
                                         onChange={(e) => setShipmentNotes(e.target.value)}
                                         placeholder="e.g. Heavy freight, 3 boxes, fragile aluminum chassis"
-                                        className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#e50914]"
+                                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#e50914]"
                                       />
                                     </div>
                                   </div>
                                   <button
                                     type="submit"
                                     disabled={creatingShipment || !shipmentCourier || !shipmentTrackingNumber}
-                                    className="px-4 py-2 rounded-xl bg-[#e50914] hover:bg-[#ff1801] disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider transition-all"
+                                    className="px-4 py-2 rounded-xl bg-[#e50914] hover:bg-[#ff1801] disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-sm"
                                   >
                                     {creatingShipment ? 'Saving Consignment...' : 'Assign Consignment & Ready for Dispatch'}
                                   </button>
@@ -1715,7 +1715,7 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                             </div>
                           )
                         ) : (
-                          <div className="text-xs text-neutral-500 font-mono">
+                          <div className="text-xs text-slate-500 font-mono">
                             Order requires verified captured payment before consignment dispatch can be prepared.
                           </div>
                         )}
@@ -1724,31 +1724,31 @@ export default function AdminOrders({ currentUser, initialOrderId = null }) {
                   </div>
 
                   {/* Audit Status History */}
-                  <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-3">
-                    <div className="text-[10px] font-mono uppercase text-neutral-400 tracking-wider">
+                  <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                    <div className="text-[10px] font-mono uppercase text-slate-500 tracking-wider font-semibold">
                       Immutable Audit History Trail
                     </div>
                     <div className="space-y-2">
                       {selectedOrder.statusHistory?.map((h) => (
-                        <div key={h.id} className="p-2.5 rounded-xl bg-black/30 border border-white/5 flex items-start justify-between text-xs">
+                        <div key={h.id} className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-start justify-between text-xs">
                           <div>
                             <div className="flex items-center gap-2">
                               <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase border ${getStatusBadge(h.toStatus)}`}>
                                 {h.fromStatus ? `${h.fromStatus} → ${h.toStatus}` : h.toStatus}
                               </span>
                               {h.changedByUser && (
-                                <span className="text-[11px] text-neutral-400">
+                                <span className="text-[11px] text-slate-500">
                                   by {h.changedByUser.fullName || h.changedByUser.email}
                                 </span>
                               )}
                             </div>
                             {h.notes && (
-                              <div className="text-neutral-400 text-[11px] mt-1 pl-1 italic">
+                              <div className="text-slate-600 text-[11px] mt-1 pl-1 italic">
                                 "{h.notes}"
                               </div>
                             )}
                           </div>
-                          <span className="text-[10px] font-mono text-neutral-500 shrink-0">
+                          <span className="text-[10px] font-mono text-slate-400 shrink-0">
                             {new Date(h.createdAt).toLocaleString()}
                           </span>
                         </div>
