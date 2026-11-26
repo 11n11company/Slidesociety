@@ -55,7 +55,16 @@ export const updateShipmentSchema = z.object({
     if (!val || val === '') return null;
     return typeof val === 'string' ? new Date(val) : val;
   }, z.date({ invalid_type_error: 'Invalid estimated delivery date' }).nullable().optional()),
-  notes: z.string().trim().max(1000, 'Notes cannot exceed 1000 characters').optional().nullable()
+  notes: z.string().trim().max(1000, 'Notes cannot exceed 1000 characters').optional().nullable(),
+  status: z.enum([
+    'READY_FOR_DISPATCH',
+    'SHIPPED',
+    'IN_TRANSIT',
+    'OUT_FOR_DELIVERY',
+    'DELIVERED',
+    'DELIVERY_FAILED',
+    'RETURN_TO_SENDER'
+  ]).optional()
 });
 
 export const updateShipmentStatusSchema = z.object({
@@ -338,32 +347,49 @@ export async function updateShipmentDetails(shipmentId, input, adminUserId) {
     throw error;
   }
 
-  // Prevent modifying delivered shipments
-  if (shipment.status === 'DELIVERED') {
-    const error = new Error('Cannot update details of a confirmed delivered shipment.');
-    error.statusCode = 400;
-    error.code = 'SHIPMENT_ALREADY_DELIVERED';
-    throw error;
-  }
-
-  const updated = await prisma.shipment.update({
-    where: { id: shipmentId },
-    data: {
-      ...(validated.courierName && { courierName: validated.courierName }),
-      ...(validated.trackingNumber && { trackingNumber: validated.trackingNumber }),
-      ...(validated.trackingUrl !== undefined && { trackingUrl: validated.trackingUrl || null }),
-      ...(validated.estimatedDeliveryAt !== undefined && { estimatedDeliveryAt: validated.estimatedDeliveryAt }),
-      ...(validated.notes !== undefined && { notes: validated.notes })
-    },
-    include: {
-      order: {
-        select: {
-          id: true,
-          orderNumber: true,
-          status: true
+  const updated = await prisma.$transaction(async (tx) => {
+    const updatedShipment = await tx.shipment.update({
+      where: { id: shipmentId },
+      data: {
+        ...(validated.courierName && { courierName: validated.courierName }),
+        ...(validated.trackingNumber && { trackingNumber: validated.trackingNumber }),
+        ...(validated.trackingUrl !== undefined && { trackingUrl: validated.trackingUrl || null }),
+        ...(validated.estimatedDeliveryAt !== undefined && { estimatedDeliveryAt: validated.estimatedDeliveryAt }),
+        ...(validated.notes !== undefined && { notes: validated.notes }),
+        ...(validated.status && {
+          status: validated.status,
+          ...(validated.status === 'SHIPPED' && !shipment.dispatchedAt && { dispatchedAt: new Date() }),
+          ...(validated.status === 'DELIVERED' && !shipment.deliveredAt && { deliveredAt: new Date() })
+        })
+      },
+      include: {
+        order: {
+          select: {
+            id: true,
+            orderNumber: true,
+            status: true
+          }
         }
       }
+    });
+
+    if (validated.status && validated.status !== shipment.status) {
+      if (['SHIPPED', 'IN_TRANSIT', 'OUT_FOR_DELIVERY'].includes(validated.status)) {
+        if (['CONFIRMED', 'PROCESSING', 'FABRICATING'].includes(shipment.order?.status)) {
+          await tx.order.update({
+            where: { id: shipment.orderId },
+            data: { status: 'SHIPPED' }
+          });
+        }
+      } else if (validated.status === 'DELIVERED') {
+        await tx.order.update({
+          where: { id: shipment.orderId },
+          data: { status: 'DELIVERED' }
+        });
+      }
     }
+
+    return updatedShipment;
   });
 
   logger.info(`Admin [${adminUserId}] updated Shipment [${shipmentId}] metadata.`);
