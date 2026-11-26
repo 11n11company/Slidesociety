@@ -40,21 +40,21 @@ export default function Hero({ onBuildClick, onWatchSetupClick, onShowToast }) {
               transform: 'translateZ(0)',
               backfaceVisibility: 'hidden'
             }}
-            className="w-full h-full object-cover object-[24%_top] sm:object-cover sm:object-[center_12%] pointer-events-none"
+            className="w-full h-full object-cover object-[12%_top] sm:object-cover sm:object-[center_12%] pointer-events-none"
           />
         </picture>
         {/* Subtle mobile readability gradient */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#080002]/85 via-[#080002]/30 to-transparent sm:hidden pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#080002]/95 via-[#080002]/50 to-transparent sm:hidden pointer-events-none" />
         {/* Bottom atmospheric vignette */}
-        <div className="absolute inset-x-0 bottom-0 h-12 sm:h-16 bg-gradient-to-t from-[#080002]/80 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-16 sm:h-20 bg-gradient-to-t from-[#070707] via-[#070707]/60 to-transparent pointer-events-none" />
       </div>
 
       {/* Responsive Content Container */}
-      <div className="relative z-10 w-full max-w-[1920px] mx-auto h-[100dvh] max-h-[760px] lg:max-h-[840px] xl:max-h-[890px] min-h-[440px] sm:min-h-[500px] flex items-start pt-24 sm:pt-32 md:pt-36 lg:pt-40 xl:pt-44">
+      <div className="relative z-10 w-full max-w-[1920px] mx-auto h-[75vh] max-h-[580px] sm:h-[85vh] sm:max-h-[760px] lg:max-h-[840px] xl:max-h-[890px] min-h-[480px] sm:min-h-[520px] flex items-start pt-20 sm:pt-32 md:pt-36 lg:pt-40 xl:pt-44">
 
         {/* Crisp Vector Typography & Actions (Matching Mockup Coordinates) */}
         <div className="relative z-10 w-full px-5 sm:px-10 lg:px-14 xl:px-16 pointer-events-none">
-          <div className="max-w-[280px] sm:max-w-lg lg:max-w-xl">
+          <div className="max-w-[260px] sm:max-w-lg lg:max-w-xl">
             {/* Kicker Eyebrow */}
             <p className="font-sans text-[10px] sm:text-xs font-semibold tracking-[0.24em] text-white/85 uppercase mb-1.5 sm:mb-2.5">
               BUILD / RACE / UPGRADE
@@ -72,12 +72,12 @@ export default function Hero({ onBuildClick, onWatchSetupClick, onShowToast }) {
             </div>
 
             {/* Interactive Pill Action Buttons */}
-            <div className="flex flex-wrap items-center gap-2.5 sm:gap-4 pointer-events-auto">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-4 pointer-events-auto">
               {/* Primary White Button: Build Yours → */}
               <button
                 type="button"
                 onClick={onBuildClick}
-                className="group shrink-0 inline-flex items-center gap-2 px-4 sm:px-6 lg:px-7 py-2 sm:py-3 bg-white hover:bg-neutral-100 text-black font-sans font-bold text-xs sm:text-sm tracking-wide rounded-full shadow-xl shadow-black/50 transition-all duration-200 hover:scale-105 active:scale-95"
+                className="group shrink-0 inline-flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-6 lg:px-7 py-2 sm:py-3 bg-white hover:bg-neutral-100 text-black font-sans font-bold text-xs sm:text-sm tracking-wide rounded-full shadow-xl shadow-black/50 transition-all duration-200 hover:scale-105 active:scale-95"
               >
                 <span>Build Yours</span>
                 <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform group-hover:translate-x-1" strokeWidth={2.5} />
@@ -87,7 +87,7 @@ export default function Hero({ onBuildClick, onWatchSetupClick, onShowToast }) {
               <button
                 type="button"
                 onClick={onWatchSetupClick}
-                className="group shrink-0 inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 lg:px-7 py-2 sm:py-3 bg-black/20 hover:bg-white/10 text-white font-sans font-semibold text-xs sm:text-sm tracking-wide rounded-full border border-white/50 hover:border-white/90 backdrop-blur-sm transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
+                className="group shrink-0 inline-flex items-center gap-1 sm:gap-2 px-3.5 sm:px-6 lg:px-7 py-2 sm:py-3 bg-black/20 hover:bg-white/10 text-white font-sans font-semibold text-xs sm:text-sm tracking-wide rounded-full border border-white/50 hover:border-white/90 backdrop-blur-sm transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
               >
                 <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-transparent stroke-white" strokeWidth={2} />
                 <span>Watch Setup</span>
@@ -97,7 +97,7 @@ export default function Hero({ onBuildClick, onWatchSetupClick, onShowToast }) {
         </div>
 
         {/* Bottom-Right Carousel Indicator Dots & Arrow Navigation */}
-        <div className="absolute bottom-7 sm:bottom-10 lg:bottom-12 xl:bottom-14 right-4 sm:right-9 lg:right-14 z-20 flex flex-nowrap items-center gap-2 sm:gap-4 lg:gap-5">
+        <div className="absolute bottom-5 sm:bottom-10 lg:bottom-12 xl:bottom-14 right-4 sm:right-9 lg:right-14 z-20 flex flex-nowrap items-center gap-2 sm:gap-4 lg:gap-5">
           {/* Indicator Dots */}
           <div className="flex items-center gap-1 sm:gap-1.5 cursor-pointer shrink-0">
             {[0, 1, 2].map((idx) => (
